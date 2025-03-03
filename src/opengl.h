@@ -74,31 +74,31 @@ extern GLBlendFuncSeparateProc glBlendFuncSeparate;
 
 #ifdef OPENGL_IMPLEMENTATION
 
-GLCreateShaderProc glCreateShader;
-GLDeleteShaderProc glDeleteShader;
-GLShaderSourceProc glShaderSource;
-GLCompileShaderProc glCompileShader;
-GLCreateProgramProc glCreateProgram;
-GLDeleteProgramProc glDeleteProgram;
-GLAttachShaderProc glAttachShader;
-GLLinkProgramProc glLinkProgram;
-GLGenVertexArraysProc glGenVertexArrays;
-GLGenBuffersProc glGenBuffers;
-GLDeleteVertexArraysProc glDeleteVertexArrays;
-GLDeleteBuffersProc glDeleteBuffers;
-GLBindVertexArrayProc glBindVertexArray;
-GLBindBufferProc glBindBuffer;
-GLBufferDataProc glBufferData;
-GLVertexAttribPointerProc glVertexAttribPointer;
-GLEnableVertexAttribArrayProc glEnableVertexAttribArray;
-GLGetUniformLocationProc glGetUniformLocation;
-GLUniformMatrix4fvProc glUniformMatrix4fv;
-GLActiveTextureProc glActiveTexture;
-GLUseProgramProc glUseProgram;
-GLUniform1iProc glUniform1i;
-GLBindSamplerProc glBindSampler;
-GLBlendEquationProc glBlendEquation;
-GLBlendFuncSeparateProc glBlendFuncSeparate;
+GLCreateShaderProc glCreateShader = NULL;
+GLDeleteShaderProc glDeleteShader = NULL;
+GLShaderSourceProc glShaderSource = NULL;
+GLCompileShaderProc glCompileShader = NULL;
+GLCreateProgramProc glCreateProgram = NULL;
+GLDeleteProgramProc glDeleteProgram = NULL;
+GLAttachShaderProc glAttachShader = NULL;
+GLLinkProgramProc glLinkProgram = NULL;
+GLGenVertexArraysProc glGenVertexArrays = NULL;
+GLGenBuffersProc glGenBuffers = NULL;
+GLDeleteVertexArraysProc glDeleteVertexArrays = NULL;
+GLDeleteBuffersProc glDeleteBuffers = NULL;
+GLBindVertexArrayProc glBindVertexArray = NULL;
+GLBindBufferProc glBindBuffer = NULL;
+GLBufferDataProc glBufferData = NULL;
+GLVertexAttribPointerProc glVertexAttribPointer = NULL;
+GLEnableVertexAttribArrayProc glEnableVertexAttribArray = NULL;
+GLGetUniformLocationProc glGetUniformLocation = NULL;
+GLUniformMatrix4fvProc glUniformMatrix4fv = NULL;
+GLActiveTextureProc glActiveTexture = NULL;
+GLUseProgramProc glUseProgram = NULL;
+GLUniform1iProc glUniform1i = NULL;
+GLBindSamplerProc glBindSampler = NULL;
+GLBlendEquationProc glBlendEquation = NULL;
+GLBlendFuncSeparateProc glBlendFuncSeparate = NULL;
 
 void init_opengl(GetProcAddressProc load) {
     glCreateShader = load("glCreateShader");
