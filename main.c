@@ -1,42 +1,19 @@
-#include <assert.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <windows.h>
+#include "common.h"
+
+#include "win32.h"
 #include <gl/gl.h>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
-#define WGL_DRAW_TO_WINDOW_ARB 0x2001
-#define WGL_ACCELERATION_ARB   0x2003
-#define WGL_SUPPORT_OPENGL_ARB 0x2010
-#define WGL_DOUBLE_BUFFER_ARB  0x2011
-#define WGL_PIXEL_TYPE_ARB     0x2013
-#define WGL_COLOR_BITS_ARB     0x2014
-#define WGL_DEPTH_BITS_ARB     0x2022
-#define WGL_STENCIL_BITS_ARB   0x2023
-
-#define WGL_FULL_ACCELERATION_ARB 0x2027
-#define WGL_TYPE_RGBA_ARB         0x202B
-
-#define WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB 0x20A9
-
-#define WGL_CONTEXT_MAJOR_VERSION_ARB    0x2091
-#define WGL_CONTEXT_MINOR_VERSION_ARB    0x2092
-#define WGL_CONTEXT_FLAGS_ARB            0x2094
-#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB 0x00000001
-#define WGL_CONTEXT_PROFILE_MASK_ARB     0x9126
+#define OPENGL_IMPLEMENTATION
+#include "opengl.h"
 
 static bool window_should_close = false;
 
-typedef BOOL (WINAPI *WGLSwapIntervalExtProc)(int interval);
-typedef HGLRC (WINAPI *WGLCreateContextAttribsARBProc)(HDC hDC, HGLRC hShareContext, const int *attribList);
-typedef BOOL (WINAPI *WGLChoosePixelFormatARBProc)(HDC hdc, const int *piAttribIList, const FLOAT *pfAttribFList, UINT nMaxFormats, int *piFormats, UINT *nNumFormats);
-
-static WGLSwapIntervalExtProc wglSwapIntervalEXT;
-static WGLCreateContextAttribsARBProc wglCreateContextAttribsARB;
-static WGLChoosePixelFormatARBProc wglChoosePixelFormatARB;
+WGLSwapIntervalExtProc wglSwapIntervalEXT;
+WGLCreateContextAttribsARBProc wglCreateContextAttribsARB;
+WGLChoosePixelFormatARBProc wglChoosePixelFormatARB;
 
 static const char *vertex_shader =
     "#version 330 core\n"
@@ -46,142 +23,63 @@ static const char *vertex_shader =
     "\n"
     "uniform mat4 projection;\n"
     "\n"
-    "out vec4 vertexColor;\n"
-    "out vec2 vertexUV;\n"
+    "out vec4 out_color;\n"
+    "out vec2 out_uv;\n"
     "\n"
     "void main() {\n"
     "    gl_Position = projection * vec4(pos, 0.0, 1.0);\n"
-    "    vertexUV = uv;\n"
-    "    vertexColor = color;\n"
+    "    out_uv = uv;\n"
+    "    out_color = color;\n"
     "}\n";
 
-static const char *fragment_shader =
+static const char *basic_fragment_shader =
     "#version 330 core\n"
-    "in vec4 vertexColor;\n"
-    "in vec2 vertexUV;\n"
-    "\n"
-    "uniform sampler2D Texture;\n"
-    "\n"
-    "out vec4 color;\n"
+    "in vec4 out_color;\n"
     "\n"
     "void main() {\n"
-    "    color = vec4(vertexColor.xyz, texture(Texture, vertexUV));\n"
+    "    gl_FragColor = out_color;\n"
     "}\n";
 
-#define OPENGL_API __stdcall
-
-typedef char GLchar;
-typedef ptrdiff_t GLsizeiptr;
-
-typedef GLuint (OPENGL_API *GLCreateShaderProc)(GLenum type);
-typedef void (OPENGL_API *GLDeleteShaderProc)(GLuint shader);
-typedef void (OPENGL_API *GLShaderSourceProc)(GLuint shader, GLsizei count, const GLchar **string, const GLint *length);
-typedef void (OPENGL_API *GLCompileShaderProc)(GLuint shader);
-typedef GLuint (OPENGL_API *GLCreateProgramProc)(void);
-typedef void (OPENGL_API *GLDeleteProgramProc)(GLuint program);
-typedef void (OPENGL_API *GLAttachShaderProc)(GLuint program, GLuint shader);
-typedef void (OPENGL_API *GLLinkProgramProc)(GLuint program);
-typedef void (OPENGL_API *GLGenVertexArraysProc)(GLsizei n, GLuint *arrays);
-typedef void (OPENGL_API *GLGenBuffersProc)(GLsizei n, GLuint *buffers);
-typedef void (OPENGL_API *GLDeleteVertexArraysProc)(GLsizei n, const GLuint *arrays);
-typedef void (OPENGL_API *GLDeleteBuffersProc)(GLsizei n, const GLuint *buffers);
-typedef void (OPENGL_API *GLBindVertexArrayProc)(GLuint array);
-typedef void (OPENGL_API *GLBindBufferProc)(GLenum target, GLuint buffer);
-typedef void (OPENGL_API *GLBufferDataProc)(GLenum target, GLsizeiptr size, const void *data, GLenum usage);
-typedef void (OPENGL_API *GLVertexAttribPointerProc)(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer);
-typedef void (OPENGL_API *GLEnableVertexAttribArrayProc)(GLuint index);
-typedef GLint (OPENGL_API *GLGetUniformLocationProc)(GLuint program, const GLchar *name);
-typedef void (OPENGL_API *GLUniformMatrix4fvProc)(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
-typedef void (OPENGL_API *GLActiveTextureProc)(GLenum texture);
-typedef void (OPENGL_API *GLUseProgramProc)(GLuint program);
-typedef void (OPENGL_API *GLUniform1iProc)(GLint location, GLint v0);
-typedef void (OPENGL_API *GLBindSamplerProc)(GLuint unit, GLuint sampler);
-typedef void (OPENGL_API *GLBlendEquationProc)(GLenum mode);
-typedef void (OPENGL_API *GLBlendFuncSeparateProc)(GLenum sfactorRGB, GLenum dfactorRGB, GLenum sfactorAlpha, GLenum dfactorAlpha);
-
-static GLCreateShaderProc glCreateShader = NULL;
-static GLDeleteShaderProc glDeleteShader = NULL;
-static GLShaderSourceProc glShaderSource = NULL;
-static GLCompileShaderProc glCompileShader = NULL;
-static GLCreateProgramProc glCreateProgram = NULL;
-static GLDeleteProgramProc glDeleteProgram = NULL;
-static GLAttachShaderProc glAttachShader = NULL;
-static GLLinkProgramProc glLinkProgram = NULL;
-static GLGenVertexArraysProc glGenVertexArrays = NULL;
-static GLGenBuffersProc glGenBuffers = NULL;
-static GLDeleteVertexArraysProc glDeleteVertexArrays = NULL;
-static GLDeleteBuffersProc glDeleteBuffers = NULL;
-static GLBindVertexArrayProc glBindVertexArray = NULL;
-static GLBindBufferProc glBindBuffer = NULL;
-static GLBufferDataProc glBufferData = NULL;
-static GLVertexAttribPointerProc glVertexAttribPointer = NULL;
-static GLEnableVertexAttribArrayProc glEnableVertexAttribArray = NULL;
-static GLGetUniformLocationProc glGetUniformLocation = NULL;
-static GLUniformMatrix4fvProc glUniformMatrix4fv = NULL;
-static GLActiveTextureProc glActiveTexture = NULL;
-static GLUseProgramProc glUseProgram = NULL;
-static GLUniform1iProc glUniform1i = NULL;
-static GLBindSamplerProc glBindSampler = NULL;
-static GLBlendEquationProc glBlendEquation = NULL;
-static GLBlendFuncSeparateProc glBlendFuncSeparate = NULL;
-
-#define GL_VERTEX_SHADER   0x8B31
-#define GL_FRAGMENT_SHADER 0x8B30
-#define GL_TEXTURE0        0x84C0
-#define GL_CLAMP_TO_EDGE   0x812F
-#define GL_ARRAY_BUFFER    0x8892
-#define GL_DYNAMIC_DRAW    0x88E8
-#define GL_FUNC_ADD        0x8006
-
-typedef void *(*GetProcAddressProc)(const char *name);
-
-static void init_opengl(GetProcAddressProc load) {
-    glCreateShader = load("glCreateShader");
-    glDeleteShader = load("glDeleteShader");
-    glShaderSource = load("glShaderSource");
-    glCompileShader = load("glCompileShader");
-    glCreateProgram = load("glCreateProgram");
-    glDeleteProgram = load("glDeleteProgram");
-    glAttachShader = load("glAttachShader");
-    glLinkProgram = load("glLinkProgram");
-    glGenVertexArrays = load("glGenVertexArrays");
-    glGenBuffers = load("glGenBuffers");
-    glDeleteVertexArrays = load("glDeleteVertexArrays");
-    glDeleteBuffers = load("glDeleteBuffers");
-    glBindVertexArray = load("glBindVertexArray");
-    glBindBuffer = load("glBindBuffer");
-    glBufferData = load("glBufferData");
-    glVertexAttribPointer = load("glVertexAttribPointer");
-    glEnableVertexAttribArray = load("glEnableVertexAttribArray");
-    glGetUniformLocation = load("glGetUniformLocation");
-    glUniformMatrix4fv = load("glUniformMatrix4fv");
-    glActiveTexture = load("glActiveTexture");
-    glUseProgram = load("glUseProgram");
-    glUniform1i = load("glUniform1i");
-    glBindSampler = load("glBindSampler");
-    glBlendEquation = load("glBlendEquation");
-    glBlendFuncSeparate = load("glBlendFuncSeparate");
-}
+static const char *text_fragment_shader =
+    "#version 330 core\n"
+    "in vec4 out_color;\n"
+    "in vec2 out_uv;\n"
+    "\n"
+    "uniform sampler2D atlas;\n"
+    "\n"
+    "void main() {\n"
+    "    float d = texture(atlas, out_uv).r;\n"
+    "    float aaf = fwidth(d);\n"
+    "    float alpha = smoothstep(0.5 - aaf, 0.5 + aaf, d);\n"
+    "    gl_FragColor = vec4(out_color.rgb, alpha);\n"
+    "}\n";
 
 static GLint projection_location = -1;
 static GLint texture_location = -1;
+static GLuint text_pipeline = -1;
+static GLuint basic_pipeline = -1;
 
 static void opengl_compile_shaders(void) {
     GLuint vertex = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertex, 1, &vertex_shader, NULL);
     glCompileShader(vertex);
 
-    GLuint fragment = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragment, 1, &fragment_shader, NULL);
-    glCompileShader(fragment);
+    GLuint basic_shader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(basic_shader, 1, &basic_fragment_shader, NULL);
+    glCompileShader(basic_shader);
+
+    GLuint text_shader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(text_shader, 1, &text_fragment_shader, NULL);
+    glCompileShader(text_shader);
 
     GLuint program = glCreateProgram();
     glAttachShader(program, vertex);
-    glAttachShader(program, fragment);
+    glAttachShader(program, text_shader);
     glLinkProgram(program);
 
     glDeleteShader(vertex);
-    glDeleteShader(fragment);
+    glDeleteShader(basic_shader);
+    glDeleteShader(text_shader);
 
     glUseProgram(program);
 
@@ -293,25 +191,6 @@ static HGLRC win32_init_opengl(HDC window_dc) {
     return opengl_rc;
 }
 
-typedef struct Vec2 {
-    float x;
-    float y;
-} Vec2;
-
-typedef struct Vec3 {
-    float x;
-    float y;
-    float z;
-} Vec3;
-
-typedef struct Vertex {
-    float x;
-    float y;
-    float u;
-    float v;
-    uint32_t color;
-} Vertex;
-
 #define GLYPH_COUNT 255
 
 typedef struct Glyph {
@@ -368,11 +247,14 @@ static FontAtlas create_font_texture() {
         printf("error loading font\n");
     }
 
+    /*
     uint32_t pt_size = 18;
     FT_Size_RequestRec size = {0};
     size.type = FT_SIZE_REQUEST_TYPE_NOMINAL;
     size.height = (pt_size << 6);
     FT_Request_Size(face, &size);
+    */
+    FT_Set_Pixel_Sizes(face, 0, 18);
     atlas.font_height = face->size->metrics.height / 64.0f;
     atlas.max_advance = face->size->metrics.max_advance / 64.0f;
     atlas.ascent = face->size->metrics.ascender / 64.0f;
@@ -381,12 +263,13 @@ static FontAtlas create_font_texture() {
     atlas.texture_width = 0;
     atlas.texture_height = 0;
 
-    atlas.texture_width += 3;
+    // FT_LOAD_FORCE_AUTOHINT | FT_LOAD_TARGET_LIGHT
+    FT_Int32 load_flags = FT_LOAD_RENDER | FT_LOAD_TARGET_(FT_RENDER_MODE_SDF);
 
     for (char c = ' '; c < '~'; c++) {
-        FT_Load_Char(face, c, FT_LOAD_RENDER | FT_LOAD_FORCE_AUTOHINT | FT_LOAD_TARGET_LIGHT);
+        FT_Load_Char(face, c, load_flags);
 
-        atlas.texture_width += face->glyph->bitmap.width + 1;
+        atlas.texture_width += face->glyph->bitmap.width;
         GLsizei h = face->glyph->bitmap.rows;
         if (h > atlas.texture_height) atlas.texture_height = h;
     }
@@ -395,12 +278,16 @@ static FontAtlas create_font_texture() {
 
     GLsizei x_offset = 0;
 
+    /*
     uint8_t white_buffer[4] = { 0xFF, 0xFF, 0xFF, 0xFF };
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 2, 2, GL_RED, GL_UNSIGNED_BYTE, white_buffer);
     x_offset += 2;
+    */
 
     for (char c = ' '; c < '~'; c++) {
-        FT_Load_Char(face, c, FT_LOAD_RENDER | FT_LOAD_FORCE_AUTOHINT | FT_LOAD_TARGET_LIGHT);
+        if (FT_Load_Char(face, c, load_flags)) {
+            printf("ERORR\n");
+        }
 
         size_t index = glyph_index(c);
         Glyph *glyph = &atlas.glyphs[index];
@@ -411,6 +298,10 @@ static FontAtlas create_font_texture() {
         glyph->advance = (face->glyph->advance.x >> 6);
         glyph->width = face->glyph->bitmap.width;
         glyph->height = face->glyph->bitmap.rows;
+
+        if (c == '!') {
+
+        }
 
         x_offset += glyph->width;
         glTexSubImage2D(GL_TEXTURE_2D, 0, glyph->x, glyph->y, glyph->width, glyph->height, GL_RED, GL_UNSIGNED_BYTE, face->glyph->bitmap.buffer);
@@ -483,51 +374,8 @@ static void render_char(FontAtlas atlas, float *x, float y, char c, Vertex *buff
     memcpy(buffer, vertices, sizeof(vertices));
 }
 
-typedef struct File {
-    char *buffer;
-    size_t size;
-} File;
-
-static File read_entire_file(const char *path) {
-    File file;
-    file.buffer = NULL;
-    file.size = 0;
-
-    FILE *handle = fopen(path, "rb");
-    if (!handle) {
-        printf("ERROR: Could not open file \"%s\".\n", path);
-        return file;
-    }
-
-    fseek(handle, 0L, SEEK_END);
-    size_t file_size = ftell(handle);
-    rewind(handle);
-
-    file.buffer = malloc(sizeof(char) * file_size + 1);
-    if (!file.buffer) {
-        printf("ERROR: Not enough memory to read \"%s\".\n", path);
-        fclose(handle);
-        return file;
-    }
-    file.size = file_size;
-
-    size_t bytes_read = fread(file.buffer, sizeof(char), file_size, handle);
-    if (bytes_read < file_size) {
-        printf("ERROR: Could not read file \"%s\".\n", path);
-        free(file.buffer);
-        file.buffer = NULL;
-        fclose(handle);
-        return file;
-    }
-
-    file.buffer[bytes_read] = '\0';
-    fclose(handle);
-
-    return file;
-}
-
-static int window_width = 800;
-static int window_height = 600;
+static int window_width = 1200;
+static int window_height = 1200;
 static int scroll = 0;
 static int cursor = 0;
 static bool ctrl_down = false;
@@ -586,12 +434,12 @@ int main(int argc, const char **argv) {
     HGLRC opengl_rc = win32_init_opengl(window_dc);
 
     wglSwapIntervalEXT(1);
+    win32_swap_interval(1);
 
     glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    //glEnable(GL_BLEND);
-    //glBlendEquation(GL_FUNC_ADD);
-    //glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glBlendEquation(GL_FUNC_ADD);
+    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
     opengl_compile_shaders();
 
