@@ -3,16 +3,45 @@
 
 #define OPENGL_API __stdcall
 
-typedef char GLchar;
+typedef unsigned int GLenum;
+typedef unsigned int GLuint;
+typedef int GLint;
+typedef int GLsizei;
+typedef float GLfloat;
+typedef unsigned char GLboolean;
 typedef ptrdiff_t GLsizeiptr;
+typedef char GLchar;
 
+#define GL_TRUE 1
+#define GL_FALSE 0
+#define GL_ONE 1
+#define GL_BLEND 0x0BE2
+#define GL_RED 0x1903
+#define GL_UNSIGNED_BYTE 0x1401
+#define GL_FLOAT 0x1406
+#define GL_UNPACK_ALIGNMENT 0x0CF5
+#define GL_TEXTURE_2D 0x0DE1
+#define GL_TEXTURE_MAG_FILTER 0x2800
+#define GL_TEXTURE_WRAP_S 0x2802
+#define GL_TEXTURE_WRAP_T 0x2803
+#define GL_TEXTURE_MIN_FILTER 0x2801
+#define GL_COLOR_BUFFER_BIT 0x00004000
+#define GL_DEPTH_BUFFER_BIT 0x00000100
+#define GL_ONE_MINUS_SRC_ALPHA 0x0303
+#define GL_SRC_ALPHA 0x0302
 #define GL_VERTEX_SHADER   0x8B31
 #define GL_FRAGMENT_SHADER 0x8B30
 #define GL_TEXTURE0        0x84C0
 #define GL_CLAMP_TO_EDGE   0x812F
 #define GL_ARRAY_BUFFER    0x8892
 #define GL_DYNAMIC_DRAW    0x88E8
+#define GL_TRIANGLES 0x0004
 #define GL_FUNC_ADD        0x8006
+#define GL_LINEAR 0x2601
+
+typedef void *(*GetProcAddressProc)(const char *name);
+
+void init_opengl(GetProcAddressProc load);
 
 typedef GLuint (OPENGL_API *GLCreateShaderProc)(GLenum type);
 typedef void (OPENGL_API *GLDeleteShaderProc)(GLuint shader);
@@ -39,10 +68,6 @@ typedef void (OPENGL_API *GLUniform1iProc)(GLint location, GLint v0);
 typedef void (OPENGL_API *GLBindSamplerProc)(GLuint unit, GLuint sampler);
 typedef void (OPENGL_API *GLBlendEquationProc)(GLenum mode);
 typedef void (OPENGL_API *GLBlendFuncSeparateProc)(GLenum sfactorRGB, GLenum dfactorRGB, GLenum sfactorAlpha, GLenum dfactorAlpha);
-
-typedef void *(*GetProcAddressProc)(const char *name);
-
-extern void init_opengl(GetProcAddressProc load);
 
 extern GLCreateShaderProc glCreateShader;
 extern GLDeleteShaderProc glDeleteShader;
@@ -71,61 +96,3 @@ extern GLBlendEquationProc glBlendEquation;
 extern GLBlendFuncSeparateProc glBlendFuncSeparate;
 
 #endif // OPENGL_H_
-
-#ifdef OPENGL_IMPLEMENTATION
-
-GLCreateShaderProc glCreateShader = NULL;
-GLDeleteShaderProc glDeleteShader = NULL;
-GLShaderSourceProc glShaderSource = NULL;
-GLCompileShaderProc glCompileShader = NULL;
-GLCreateProgramProc glCreateProgram = NULL;
-GLDeleteProgramProc glDeleteProgram = NULL;
-GLAttachShaderProc glAttachShader = NULL;
-GLLinkProgramProc glLinkProgram = NULL;
-GLGenVertexArraysProc glGenVertexArrays = NULL;
-GLGenBuffersProc glGenBuffers = NULL;
-GLDeleteVertexArraysProc glDeleteVertexArrays = NULL;
-GLDeleteBuffersProc glDeleteBuffers = NULL;
-GLBindVertexArrayProc glBindVertexArray = NULL;
-GLBindBufferProc glBindBuffer = NULL;
-GLBufferDataProc glBufferData = NULL;
-GLVertexAttribPointerProc glVertexAttribPointer = NULL;
-GLEnableVertexAttribArrayProc glEnableVertexAttribArray = NULL;
-GLGetUniformLocationProc glGetUniformLocation = NULL;
-GLUniformMatrix4fvProc glUniformMatrix4fv = NULL;
-GLActiveTextureProc glActiveTexture = NULL;
-GLUseProgramProc glUseProgram = NULL;
-GLUniform1iProc glUniform1i = NULL;
-GLBindSamplerProc glBindSampler = NULL;
-GLBlendEquationProc glBlendEquation = NULL;
-GLBlendFuncSeparateProc glBlendFuncSeparate = NULL;
-
-void init_opengl(GetProcAddressProc load) {
-    glCreateShader = load("glCreateShader");
-    glDeleteShader = load("glDeleteShader");
-    glShaderSource = load("glShaderSource");
-    glCompileShader = load("glCompileShader");
-    glCreateProgram = load("glCreateProgram");
-    glDeleteProgram = load("glDeleteProgram");
-    glAttachShader = load("glAttachShader");
-    glLinkProgram = load("glLinkProgram");
-    glGenVertexArrays = load("glGenVertexArrays");
-    glGenBuffers = load("glGenBuffers");
-    glDeleteVertexArrays = load("glDeleteVertexArrays");
-    glDeleteBuffers = load("glDeleteBuffers");
-    glBindVertexArray = load("glBindVertexArray");
-    glBindBuffer = load("glBindBuffer");
-    glBufferData = load("glBufferData");
-    glVertexAttribPointer = load("glVertexAttribPointer");
-    glEnableVertexAttribArray = load("glEnableVertexAttribArray");
-    glGetUniformLocation = load("glGetUniformLocation");
-    glUniformMatrix4fv = load("glUniformMatrix4fv");
-    glActiveTexture = load("glActiveTexture");
-    glUseProgram = load("glUseProgram");
-    glUniform1i = load("glUniform1i");
-    glBindSampler = load("glBindSampler");
-    glBlendEquation = load("glBlendEquation");
-    glBlendFuncSeparate = load("glBlendFuncSeparate");
-}
-
-#endif // OPENGL_IMPLEMENTATION

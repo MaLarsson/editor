@@ -1,13 +1,11 @@
 #include "common.h"
-
+#include "opengl.h"
 #include "win32.h"
-#include <gl/gl.h>
 
+// TODO(marla): remove gl/gl.h and move free_type into font.c
+#include <gl/gl.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
-
-#define OPENGL_IMPLEMENTATION
-#include "opengl.h"
 
 static bool window_should_close = false;
 
@@ -453,7 +451,7 @@ int main(int argc, const char **argv) {
     glBindVertexArray(vao);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
-    File file = read_entire_file("main.c");
+    File file = read_entire_file("src/main.c");
     size_t buffer_size = sizeof(Vertex) * 6 * file.size;
     Vertex *vertices = malloc(buffer_size);
 
