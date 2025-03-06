@@ -2,16 +2,13 @@
 #include "opengl.h"
 #include "win32.h"
 
-// TODO(marla): remove gl/gl.h and move free_type into font.c
+// TODO(marla): remove windows.h and gl/gl.h and move free_type into font.c
+#include <windows.h>
 #include <gl/gl.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
 static bool window_should_close = false;
-
-WGLSwapIntervalExtProc wglSwapIntervalEXT;
-WGLCreateContextAttribsARBProc wglCreateContextAttribsARB;
-WGLChoosePixelFormatARBProc wglChoosePixelFormatARB;
 
 static const char *vertex_shader =
     "#version 330 core\n"
@@ -85,110 +82,6 @@ static void opengl_compile_shaders(void) {
     texture_location = glGetUniformLocation(program, "Texture");
 }
 
-static void win32_init_opengl_extensions(void) {
-    WNDCLASSA dummy_window_class = {0};
-    dummy_window_class.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
-    dummy_window_class.lpfnWndProc = DefWindowProcA;
-    dummy_window_class.hInstance = GetModuleHandle(NULL);
-    dummy_window_class.lpszClassName = "wgl_loader";
-
-    if (!RegisterClassA(&dummy_window_class)) {
-        //fatal_error("Failed to register dummy OpenGL window.");
-    }
-
-    HWND dummy_window = CreateWindowExA(0, dummy_window_class.lpszClassName, "", 0,
-                                        CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-                                        0, 0, dummy_window_class.hInstance, 0);
-    if (!dummy_window) {
-        //fatal_error("Failed to create dummy OpenGL window.");
-    }
-
-    HDC dummy_dc = GetDC(dummy_window);
-
-    PIXELFORMATDESCRIPTOR desired_pixel_format = {0};
-    desired_pixel_format.nSize = sizeof(desired_pixel_format);
-    desired_pixel_format.nVersion = 1;
-    desired_pixel_format.iPixelType = PFD_TYPE_RGBA;
-    desired_pixel_format.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-    desired_pixel_format.cColorBits = 32;
-    desired_pixel_format.cAlphaBits = 8;
-    desired_pixel_format.iLayerType = PFD_MAIN_PLANE;
-    desired_pixel_format.cDepthBits = 24;
-    desired_pixel_format.cStencilBits = 8;
-
-    int pixel_format_index = ChoosePixelFormat(dummy_dc, &desired_pixel_format);
-    PIXELFORMATDESCRIPTOR pixel_format;
-    DescribePixelFormat(dummy_dc, pixel_format_index, sizeof(pixel_format), &pixel_format);
-    SetPixelFormat(dummy_dc, pixel_format_index, &pixel_format);
-
-    HGLRC dummy_rc = wglCreateContext(dummy_dc);
-    if (!wglMakeCurrent(dummy_dc, dummy_rc)) {
-        //printf("unable to create opengl context\n");
-        //window_should_close = true;
-    }
-
-    wglSwapIntervalEXT = (WGLSwapIntervalExtProc)wglGetProcAddress("wglSwapIntervalEXT");
-    wglCreateContextAttribsARB = (WGLCreateContextAttribsARBProc)wglGetProcAddress("wglCreateContextAttribsARB");
-    wglChoosePixelFormatARB = (WGLChoosePixelFormatARBProc)wglGetProcAddress("wglChoosePixelFormatARB");
-
-    init_opengl((GetProcAddressProc)wglGetProcAddress);
-
-    if (!wglSwapIntervalEXT || !wglCreateContextAttribsARB || !wglChoosePixelFormatARB) {
-        //printf("unable to load required opengl extensions\n");
-        //window_should_close = true;
-    }
-
-    wglMakeCurrent(dummy_dc, 0);
-    wglDeleteContext(dummy_rc);
-    ReleaseDC(dummy_window, dummy_dc);
-    DestroyWindow(dummy_window);
-    UnregisterClassA(dummy_window_class.lpszClassName, dummy_window_class.hInstance);
-}
-
-static HGLRC win32_init_opengl(HDC window_dc) {
-    win32_init_opengl_extensions();
-
-    int pixel_format_attribs[] = {
-        WGL_DRAW_TO_WINDOW_ARB,           GL_TRUE,
-        WGL_SUPPORT_OPENGL_ARB,           GL_TRUE,
-        WGL_DOUBLE_BUFFER_ARB,            GL_TRUE,
-        WGL_ACCELERATION_ARB,             WGL_FULL_ACCELERATION_ARB,
-        WGL_PIXEL_TYPE_ARB,               WGL_TYPE_RGBA_ARB,
-        WGL_COLOR_BITS_ARB,               32,
-        WGL_DEPTH_BITS_ARB,               24,
-        WGL_STENCIL_BITS_ARB,             8,
-        WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB, GL_TRUE,
-        0,
-    };
-
-    int pixel_format_index;
-    UINT num_formats;
-    wglChoosePixelFormatARB(window_dc, pixel_format_attribs, 0, 1, &pixel_format_index, &num_formats);
-    if (!num_formats) {
-        // ...
-    }
-
-    PIXELFORMATDESCRIPTOR pixel_format;
-    DescribePixelFormat(window_dc, pixel_format_index, sizeof(pixel_format), &pixel_format);
-    SetPixelFormat(window_dc, pixel_format_index, &pixel_format);
-
-    int opengl_context_attribs[] = {
-        WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
-        WGL_CONTEXT_MINOR_VERSION_ARB, 3,
-        WGL_CONTEXT_PROFILE_MASK_ARB,  WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
-        0,
-    };
-
-    HGLRC opengl_rc = wglCreateContextAttribsARB(window_dc, 0, opengl_context_attribs);
-
-    if (!wglMakeCurrent(window_dc, opengl_rc)) {
-        printf("unable to create opengl context\n");
-        window_should_close = true;
-    }
-
-    return opengl_rc;
-}
-
 #define GLYPH_COUNT 255
 
 typedef struct Glyph {
@@ -219,9 +112,7 @@ static size_t glyph_index(char c) {
     return index;
 }
 
-static FontAtlas create_font_texture() {
-    FontAtlas atlas = {0};
-
+static void create_font_atlas(FontAtlas *atlas) {
     glActiveTexture(GL_TEXTURE0);
     glUniform1i(texture_location, 0);
 
@@ -253,13 +144,13 @@ static FontAtlas create_font_texture() {
     FT_Request_Size(face, &size);
     */
     FT_Set_Pixel_Sizes(face, 0, 18);
-    atlas.font_height = face->size->metrics.height / 64.0f;
-    atlas.max_advance = face->size->metrics.max_advance / 64.0f;
-    atlas.ascent = face->size->metrics.ascender / 64.0f;
-    atlas.descent = face->size->metrics.descender / 64.0f;
+    atlas->font_height = face->size->metrics.height / 64.0f;
+    atlas->max_advance = face->size->metrics.max_advance / 64.0f;
+    atlas->ascent = face->size->metrics.ascender / 64.0f;
+    atlas->descent = face->size->metrics.descender / 64.0f;
 
-    atlas.texture_width = 0;
-    atlas.texture_height = 0;
+    atlas->texture_width = 0;
+    atlas->texture_height = 0;
 
     // FT_LOAD_FORCE_AUTOHINT | FT_LOAD_TARGET_LIGHT
     FT_Int32 load_flags = FT_LOAD_RENDER | FT_LOAD_TARGET_(FT_RENDER_MODE_SDF);
@@ -267,12 +158,12 @@ static FontAtlas create_font_texture() {
     for (char c = ' '; c < '~'; c++) {
         FT_Load_Char(face, c, load_flags);
 
-        atlas.texture_width += face->glyph->bitmap.width;
+        atlas->texture_width += face->glyph->bitmap.width;
         GLsizei h = face->glyph->bitmap.rows;
-        if (h > atlas.texture_height) atlas.texture_height = h;
+        if (h > atlas->texture_height) atlas->texture_height = h;
     }
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, atlas.texture_width, atlas.texture_height, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, atlas->texture_width, atlas->texture_height, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
 
     GLsizei x_offset = 0;
 
@@ -288,7 +179,7 @@ static FontAtlas create_font_texture() {
         }
 
         size_t index = glyph_index(c);
-        Glyph *glyph = &atlas.glyphs[index];
+        Glyph *glyph = &atlas->glyphs[index];
         glyph->x = x_offset;
         glyph->y = 0;
         glyph->x_bearing = face->glyph->bitmap_left;
@@ -307,8 +198,6 @@ static FontAtlas create_font_texture() {
 
     FT_Done_Face(face);
     FT_Done_FreeType(library);
-
-    return atlas;
 }
 
 #define GREEN 0xFF00FF00
@@ -372,66 +261,9 @@ static void render_char(FontAtlas atlas, float *x, float y, char c, Vertex *buff
     memcpy(buffer, vertices, sizeof(vertices));
 }
 
-static int window_width = 1200;
-static int window_height = 1200;
-static int scroll = 0;
-static int cursor = 0;
-static bool ctrl_down = false;
-
-LRESULT CALLBACK main_window_callback(HWND window, UINT message, WPARAM w_param, LPARAM l_param) {
-    LRESULT result = 0;
-    switch (message) {
-    case WM_MOUSEWHEEL:
-        scroll -= GET_WHEEL_DELTA_WPARAM(w_param);
-        break;
-    case WM_KEYDOWN:
-        if (w_param == VK_RIGHT) cursor += 1;
-        if (w_param == VK_LEFT) cursor -= 1;
-        if (w_param == VK_CONTROL) ctrl_down = true;
-        if (w_param == 'F' && ctrl_down) cursor += 1;
-        if (w_param == 'B' && ctrl_down) cursor -= 1;
-        break;
-    case WM_KEYUP:
-        if (w_param == VK_CONTROL) ctrl_down = false;
-        break;
-    case WM_SIZE:
-        window_width = LOWORD(l_param);
-        window_height = HIWORD(l_param);
-        break;
-    case WM_CLOSE:
-    case WM_DESTROY:
-        window_should_close = true;
-        break;
-    default:
-        result = DefWindowProcA(window, message, w_param, l_param);
-        break;
-    }
-    return result;
-}
-
 int main(int argc, const char **argv) {
-    WNDCLASSA window_class = {0};
-    window_class.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
-    window_class.lpfnWndProc = main_window_callback;
-    window_class.hInstance = GetModuleHandle(NULL);
-    window_class.lpszClassName = "MainWindow";
-
-    if (!RegisterClassA(&window_class)) {
-        printf("unable to register window class\n");
-        return 1;
-    }
-
-    HWND window = CreateWindowExA(0, window_class.lpszClassName, "Hello, World!", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
-                                  CW_USEDEFAULT, CW_USEDEFAULT, window_width, window_height, 0, 0, window_class.hInstance, 0);
-    if (!window) {
-        printf("unable to create window\n");
-        return 2;
-    }
-
-    HDC window_dc = GetDC(window);
-    HGLRC opengl_rc = win32_init_opengl(window_dc);
-
-    wglSwapIntervalEXT(1);
+    Window window = {0};
+    win32_init_window(&window, 1200, 1200, "Editor");
     win32_swap_interval(1);
 
     glEnable(GL_BLEND);
@@ -441,7 +273,9 @@ int main(int argc, const char **argv) {
 
     opengl_compile_shaders();
 
-    FontAtlas atlas = create_font_texture();
+    FontAtlas atlas = {0};
+    create_font_atlas(&atlas);
+
     glActiveTexture(GL_TEXTURE0);
     glUniform1i(texture_location, 0);
 
@@ -462,17 +296,13 @@ int main(int argc, const char **argv) {
     glEnableVertexAttribArray(1);
     glEnableVertexAttribArray(2);
 
-    while (!window_should_close) {
-        MSG message;
-        while (PeekMessage(&message, NULL, 0, 0, PM_REMOVE)) {
-            TranslateMessage(&message);
-            DispatchMessageA(&message);
-        }
+    while (!window.should_close) {
+        win32_poll_events();
 
-        glViewport(0, 0, window_width, window_height);
+        glViewport(0, 0, 1200 /*window->width*/, 1200 /*window->height*/);
 
-        float w = 2.0f / window_width;
-        float h = 2.0f / window_height;
+        float w = 2.0f / 1200; //window->width;
+        float h = 2.0f / 1200; //window->height;
 
         float projection[] = {
              w,  0,  0,  0,
@@ -488,7 +318,7 @@ int main(int argc, const char **argv) {
 
         float margin = 5;
         float x = margin;
-        float y = window_height + scroll;
+        float y = 1200 /*window->height*/ + 0; // scroll;
 
         int index = 0;
         for (size_t i = 0; i < file.size; i++) {
@@ -502,7 +332,7 @@ int main(int argc, const char **argv) {
                 continue;
             }
 
-            if (i == cursor) {
+            if (i == /*cursor*/0) {
                 float _x = x;
                 render_cursor(atlas, &x, y, &vertices[index]);
                 x = _x;
@@ -518,7 +348,8 @@ int main(int argc, const char **argv) {
         glBufferData(GL_ARRAY_BUFFER, buffer_size, vertices, GL_DYNAMIC_DRAW);
         glDrawArrays(GL_TRIANGLES, 0, buffer_size / (sizeof(float) * 4 + sizeof(uint32_t)));
 
-        SwapBuffers(window_dc);
+        win32_swap_buffers(&window);
+        //SwapBuffers(window_dc);
     }
 
     return 0;

@@ -1,6 +1,8 @@
 #ifndef OPENGL_H_
 #define OPENGL_H_
 
+#include "common.h"
+
 #define OPENGL_API __stdcall
 
 typedef unsigned int GLenum;
