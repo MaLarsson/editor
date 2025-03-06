@@ -133,20 +133,11 @@ static void create_font_atlas(FontAtlas *atlas) {
         printf("error loading font\n");
     }
 
-    /*
-    uint32_t pt_size = 18;
-    FT_Size_RequestRec size = {0};
-    size.type = FT_SIZE_REQUEST_TYPE_NOMINAL;
-    size.height = (pt_size << 6);
-    FT_Request_Size(face, &size);
-    */
     FT_Set_Pixel_Sizes(face, 0, 18);
     atlas->font_height = face->size->metrics.height / 64.0f;
     atlas->max_advance = face->size->metrics.max_advance / 64.0f;
     atlas->ascent = face->size->metrics.ascender / 64.0f;
     atlas->descent = face->size->metrics.descender / 64.0f;
-
-    printf("a: %d, d: %d, lg: %d\n", (int)atlas->ascent, (int)atlas->descent, 0);
 
     atlas->texture_width = 0;
     atlas->texture_height = 0;
@@ -297,10 +288,10 @@ int main(int argc, const char **argv) {
     while (!window.should_close) {
         win32_poll_events();
 
-        glViewport(0, 0, 1200 /*window->width*/, 1200 /*window->height*/);
+        glViewport(0, 0, window.width, window.height);
 
-        float w = 2.0f / 1200; //window->width;
-        float h = 2.0f / 1200; //window->height;
+        float w = 2.0f / window.width;
+        float h = 2.0f / window.height;
 
         float projection[] = {
              w,  0,  0,  0,
@@ -316,7 +307,7 @@ int main(int argc, const char **argv) {
 
         float margin = 5;
         float x = margin;
-        float y = 1200 /*window->height*/ + 0; // scroll;
+        float y = window.height + window.scroll;
 
         int index = 0;
         for (size_t i = 0; i < file.size; i++) {
@@ -330,7 +321,7 @@ int main(int argc, const char **argv) {
                 continue;
             }
 
-            if (i == /*cursor*/0) {
+            if (i == window.cursor) {
                 float _x = x;
                 render_cursor(atlas, &x, y, &vertices[index]);
                 x = _x;
@@ -347,7 +338,6 @@ int main(int argc, const char **argv) {
         glDrawArrays(GL_TRIANGLES, 0, buffer_size / (sizeof(float) * 4 + sizeof(uint32_t)));
 
         win32_swap_buffers(&window);
-        //SwapBuffers(window_dc);
     }
 
     return 0;

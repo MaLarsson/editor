@@ -27,8 +27,6 @@ typedef BOOL (WINAPI *WGLSwapIntervalExtProc)(int interval);
 typedef HGLRC (WINAPI *WGLCreateContextAttribsARBProc)(HDC hDC, HGLRC hShareContext, const int *attribList);
 typedef BOOL (WINAPI *WGLChoosePixelFormatARBProc)(HDC hdc, const int *piAttribIList, const FLOAT *pfAttribFList, UINT nMaxFormats, int *piFormats, UINT *nNumFormats);
 
-static int scroll = 0;
-static int cursor = 0;
 static bool ctrl_down = false;
 
 static WGLSwapIntervalExtProc wglSwapIntervalEXT;
@@ -38,29 +36,31 @@ static WGLChoosePixelFormatARBProc wglChoosePixelFormatARB;
 static int window_width = 1200;
 static int window_height = 1200;
 
+static Window *g_window = NULL;
+
 LRESULT CALLBACK main_window_callback(HWND window, UINT message, WPARAM w_param, LPARAM l_param) {
     LRESULT result = 0;
     switch (message) {
     case WM_MOUSEWHEEL:
-        scroll -= GET_WHEEL_DELTA_WPARAM(w_param);
+        g_window->scroll -= GET_WHEEL_DELTA_WPARAM(w_param);
         break;
     case WM_KEYDOWN:
-        if (w_param == VK_RIGHT) cursor += 1;
-        if (w_param == VK_LEFT) cursor -= 1;
+        if (w_param == VK_RIGHT) g_window->cursor += 1;
+        if (w_param == VK_LEFT) g_window->cursor -= 1;
         if (w_param == VK_CONTROL) ctrl_down = true;
-        if (w_param == 'F' && ctrl_down) cursor += 1;
-        if (w_param == 'B' && ctrl_down) cursor -= 1;
+        if (w_param == 'F' && ctrl_down) g_window->cursor += 1;
+        if (w_param == 'B' && ctrl_down) g_window->cursor -= 1;
         break;
     case WM_KEYUP:
         if (w_param == VK_CONTROL) ctrl_down = false;
         break;
     case WM_SIZE:
-        window_width = LOWORD(l_param);
-        window_height = HIWORD(l_param);
+        g_window->width = LOWORD(l_param);
+        g_window->height = HIWORD(l_param);
         break;
     case WM_CLOSE:
     case WM_DESTROY:
-        //window_should_close = true;
+        g_window->should_close = true;
         break;
     default:
         result = DefWindowProcA(window, message, w_param, l_param);
@@ -174,6 +174,11 @@ static HGLRC win32_init_opengl(HDC window_dc) {
 }
 
 void win32_init_window(Window *window, int width, int height, const char *title) {
+    // TODO(marla): remove these?
+    g_window = window;
+    window->scroll = 0;
+    window->cursor = 0;
+
     window->width = 1200;
     window->height = 1200;
 
