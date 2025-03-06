@@ -8,6 +8,9 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
+#define STB_TRUETYPE_IMPLEMENTATION
+#include "stb_truetype.h"
+
 static bool window_should_close = false;
 
 static const char *vertex_shader =
