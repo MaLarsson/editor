@@ -8,9 +8,6 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
-#define STB_TRUETYPE_IMPLEMENTATION
-#include "stb_truetype.h"
-
 static bool window_should_close = false;
 
 static const char *vertex_shader =
@@ -46,10 +43,7 @@ static const char *text_fragment_shader =
     "uniform sampler2D atlas;\n"
     "\n"
     "void main() {\n"
-    "    float d = texture(atlas, out_uv).r;\n"
-    "    float aaf = fwidth(d);\n"
-    "    float alpha = smoothstep(0.5 - aaf, 0.5 + aaf, d);\n"
-    "    gl_FragColor = vec4(out_color.rgb, alpha);\n"
+    "    gl_FragColor = vec4(out_color.rgb, texture(atlas, out_uv).r);\n"
     "}\n";
 
 static GLint projection_location = -1;
@@ -152,11 +146,12 @@ static void create_font_atlas(FontAtlas *atlas) {
     atlas->ascent = face->size->metrics.ascender / 64.0f;
     atlas->descent = face->size->metrics.descender / 64.0f;
 
+    printf("a: %d, d: %d, lg: %d\n", (int)atlas->ascent, (int)atlas->descent, 0);
+
     atlas->texture_width = 0;
     atlas->texture_height = 0;
 
-    // FT_LOAD_FORCE_AUTOHINT | FT_LOAD_TARGET_LIGHT
-    FT_Int32 load_flags = FT_LOAD_RENDER | FT_LOAD_TARGET_(FT_RENDER_MODE_SDF);
+    FT_Int32 load_flags = FT_LOAD_RENDER | FT_LOAD_FORCE_AUTOHINT | FT_LOAD_TARGET_LIGHT;
 
     for (char c = ' '; c < '~'; c++) {
         FT_Load_Char(face, c, load_flags);
@@ -270,9 +265,9 @@ int main(int argc, const char **argv) {
     win32_swap_interval(1);
 
     glEnable(GL_BLEND);
-    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glBlendEquation(GL_FUNC_ADD);
-    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    //glBlendEquation(GL_FUNC_ADD);
+    //glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
     opengl_compile_shaders();
 

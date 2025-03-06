@@ -1,5 +1,18 @@
 #include "common.h"
 
+static Scratch scratch_buffer = {0};
+
+size_t file_size(const char *path) {
+    FILE *handle = fopen(path, "rb");
+    if (!handle) return 0;
+
+    fseek(handle, 0, SEEK_END);
+    size_t file_size = ftell(handle);
+    fclose(handle);
+
+    return file_size;
+}
+
 File read_entire_file(const char *path) {
     File file;
     file.buffer = NULL;
@@ -11,9 +24,9 @@ File read_entire_file(const char *path) {
         return file;
     }
 
-    fseek(handle, 0L, SEEK_END);
+    fseek(handle, 0, SEEK_END);
     size_t file_size = ftell(handle);
-    rewind(handle);
+    fseek(handle, 0, SEEK_SET);
 
     file.buffer = malloc(sizeof(char) * file_size + 1);
     if (!file.buffer) {
