@@ -51,3 +51,11 @@ File read_entire_file(const char *path) {
     return file;
 }
 
+Vec4f hex_to_vec4f(uint32_t color) {
+    Vec4f result;
+    result.x = ((color >> (3*8)) & 0xFF) / 255.0f;
+    result.y = ((color >> (2*8)) & 0xFF) / 255.0f;
+    result.z = ((color >> (1*8)) & 0xFF) / 255.0f;
+    result.w = ((color >> (0*8)) & 0xFF) / 255.0f;
+    return result;
+}

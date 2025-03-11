@@ -1,85 +1,7 @@
 #include "common.h"
-
-// TODO(marla): win32 should be moved into platform?
 #include "win32.h"
-
-// TODO(marla): opengl should be moved into renderer.
-//#include "opengl.h"
 #include "renderer.h"
-
 #include "font.h"
-
-#include <ft2build.h>
-#include FT_FREETYPE_H
-
-static const char *vertex_shader =
-    "#version 330 core\n"
-    "layout (location = 0) in vec2 pos;\n"
-    "layout (location = 1) in vec2 uv;\n"
-    "layout (location = 2) in vec4 color;\n"
-    "\n"
-    "uniform mat4 projection;\n"
-    "\n"
-    "out vec4 out_color;\n"
-    "out vec2 out_uv;\n"
-    "\n"
-    "void main() {\n"
-    "    gl_Position = projection * vec4(pos, 0.0, 1.0);\n"
-    "    out_uv = uv;\n"
-    "    out_color = color;\n"
-    "}\n";
-
-static const char *basic_fragment_shader =
-    "#version 330 core\n"
-    "in vec4 out_color;\n"
-    "\n"
-    "void main() {\n"
-    "    gl_FragColor = out_color;\n"
-    "}\n";
-
-static const char *text_fragment_shader =
-    "#version 330 core\n"
-    "in vec4 out_color;\n"
-    "in vec2 out_uv;\n"
-    "\n"
-    "uniform sampler2D atlas;\n"
-    "\n"
-    "void main() {\n"
-    "    gl_FragColor = vec4(out_color.rgb, texture(atlas, out_uv).r);\n"
-    "}\n";
-
-static GLint projection_location = -1;
-static GLint texture_location = -1;
-static GLuint text_pipeline = -1;
-static GLuint basic_pipeline = -1;
-
-static void opengl_compile_shaders(void) {
-    GLuint vertex = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertex, 1, &vertex_shader, NULL);
-    glCompileShader(vertex);
-
-    GLuint basic_shader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(basic_shader, 1, &basic_fragment_shader, NULL);
-    glCompileShader(basic_shader);
-
-    GLuint text_shader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(text_shader, 1, &text_fragment_shader, NULL);
-    glCompileShader(text_shader);
-
-    GLuint program = glCreateProgram();
-    glAttachShader(program, vertex);
-    glAttachShader(program, text_shader);
-    glLinkProgram(program);
-
-    glDeleteShader(vertex);
-    glDeleteShader(basic_shader);
-    glDeleteShader(text_shader);
-
-    glUseProgram(program);
-
-    projection_location = glGetUniformLocation(program, "projection");
-    texture_location = glGetUniformLocation(program, "Texture");
-}
 
 static size_t glyph_index(char c) {
     size_t index = c - ' ';
@@ -88,90 +10,16 @@ static size_t glyph_index(char c) {
     return index;
 }
 
-static void create_font_atlas(FontAtlas *atlas) {
-    glActiveTexture(GL_TEXTURE0);
-    glUniform1i(texture_location, 0);
-
-    GLuint texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    FT_Library library;
-    if (FT_Init_FreeType(&library)) {
-        printf("error loading freetype library\n");
-    }
-
-    FT_Face face;
-    if (FT_New_Face(library, "C:/Windows/Fonts/consola.ttf", 0, &face)) {
-        printf("error loading font\n");
-    }
-
-    FT_Set_Pixel_Sizes(face, 0, 18);
-    atlas->font_height = face->size->metrics.height / 64.0f;
-    atlas->max_advance = face->size->metrics.max_advance / 64.0f;
-    atlas->ascent = face->size->metrics.ascender / 64.0f;
-    atlas->descent = face->size->metrics.descender / 64.0f;
-
-    atlas->texture_width = 0;
-    atlas->texture_height = 0;
-
-    FT_Int32 load_flags = FT_LOAD_RENDER | FT_LOAD_FORCE_AUTOHINT | FT_LOAD_TARGET_LIGHT;
-
-    for (char c = ' '; c < '~'; c++) {
-        FT_Load_Char(face, c, load_flags);
-
-        atlas->texture_width += face->glyph->bitmap.width;
-        GLsizei h = face->glyph->bitmap.rows;
-        if (h > atlas->texture_height) atlas->texture_height = h;
-    }
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, atlas->texture_width, atlas->texture_height, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
-
-    GLsizei x_offset = 0;
-
-    for (char c = ' '; c < '~'; c++) {
-        if (FT_Load_Char(face, c, load_flags)) {
-            printf("ERORR\n");
-        }
-
-        size_t index = glyph_index(c);
-        Glyph *glyph = &atlas->glyphs[index];
-        glyph->x = x_offset;
-        glyph->y = 0;
-        glyph->x_bearing = face->glyph->bitmap_left;
-        glyph->y_bearing = face->glyph->bitmap_top;
-        glyph->advance = (face->glyph->advance.x >> 6);
-        glyph->width = face->glyph->bitmap.width;
-        glyph->height = face->glyph->bitmap.rows;
-
-        if (c == '!') {
-
-        }
-
-        x_offset += glyph->width;
-        glTexSubImage2D(GL_TEXTURE_2D, 0, glyph->x, glyph->y, glyph->width, glyph->height, GL_RED, GL_UNSIGNED_BYTE, face->glyph->bitmap.buffer);
-    }
-
-    FT_Done_Face(face);
-    FT_Done_FreeType(library);
-}
-
-#define GREEN 0xFF00FF00
 #define RED   0xFF0000FF
-#define BLUE  0xFFFF0000
+#define GREEN 0x00FF00FF
+#define BLUE  0x0000FFFF
 #define WHITE 0xFFFFFFFF
-#define BLACK 0xFF000000
+#define BLACK 0x000000FF
 
-static void render_cursor(FontAtlas atlas, float *x, float y, Vertex *buffer) {
-    float line_gap = atlas.font_height - (atlas.ascent - atlas.descent);
-    float h = atlas.font_height - line_gap;
-    float w = atlas.max_advance;
+static void render_cursor(FontAtlas *atlas, float *x, float y, Vertex *buffer) {
+    float line_gap = atlas->font_height - (atlas->ascent - atlas->descent);
+    float h = atlas->font_height - line_gap;
+    float w = atlas->max_advance;
     float x_pos = *x;
     float y_pos = y - h;
 
@@ -190,24 +38,24 @@ static void render_cursor(FontAtlas atlas, float *x, float y, Vertex *buffer) {
         {x_pos + w, y_pos + h, x_uv_to,   y_uv_from, GREEN},
     };
 
-    *x = *x + atlas.max_advance;
+    *x = *x + atlas->max_advance;
     memcpy(buffer, vertices, sizeof(vertices));
 }
 
-static void render_char(FontAtlas atlas, float *x, float y, char c, Vertex *buffer, uint32_t color) {
+static void render_char(FontAtlas *atlas, float *x, float y, char c, Vertex *buffer, uint32_t color) {
     int index = glyph_index(c);
-    Glyph *glyph = &atlas.glyphs[index];
-    float padding = (atlas.font_height - atlas.ascent + atlas.descent) / 2;
+    Glyph *glyph = &atlas->glyphs[index];
+    float padding = (atlas->font_height - atlas->ascent + atlas->descent) / 2;
 
     float char_h = glyph->height;
     float char_w = glyph->width;
     float x_pos = *x + glyph->x_bearing;
-    float y_pos = y - padding - atlas.ascent - (char_h - glyph->y_bearing);
+    float y_pos = y - padding - atlas->ascent - (char_h - glyph->y_bearing);
 
-    float x_uv_from = glyph->x / atlas.texture_width;
-    float x_uv_to = (glyph->x + glyph->width) / atlas.texture_width;
-    float y_uv_from = glyph->y / atlas.texture_height;
-    float y_uv_to = (glyph->y + glyph->height) / atlas.texture_height;
+    float x_uv_from = glyph->x / atlas->texture_width;
+    float x_uv_to = (glyph->x + glyph->width) / atlas->texture_width;
+    float y_uv_from = glyph->y / atlas->texture_height;
+    float y_uv_to = (glyph->y + glyph->height) / atlas->texture_height;
 
     Vertex vertices[] = {
         {x_pos,          y_pos,          x_uv_from, y_uv_to,   color},
@@ -231,51 +79,24 @@ int main(int argc, const char **argv) {
     Renderer renderer = {0};
     renderer_init(&renderer);
 
-    opengl_compile_shaders();
-
     FontAtlas atlas = {0};
-    create_font_atlas(&atlas);
-
-    glActiveTexture(GL_TEXTURE0);
-    glUniform1i(texture_location, 0);
-
-    GLuint vao, vbo;
-    glGenVertexArrays(1, &vao);
-    glGenBuffers(1, &vbo);
-    glBindVertexArray(vao);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    font_atlas_init(&atlas);
 
     File file = read_entire_file("src/main.c");
     size_t buffer_size = sizeof(Vertex) * 6 * file.size;
     Vertex *vertices = malloc(buffer_size);
 
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)8);
-    glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(Vertex), (void *)16);
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
-    glEnableVertexAttribArray(2);
-
     while (!window.should_close) {
         win32_poll_events();
 
-        glViewport(0, 0, window.width, window.height);
+        uint32_t bg_color = 0x242424FF;
+        uint32_t text_color = WHITE;
 
-        float w = 2.0f / window.width;
-        float h = 2.0f / window.height;
+        renderer_reset_draw_data(&renderer);
+        renderer_update_screen_size(&renderer, window.width, window.height);
+        renderer_clear_screen(bg_color);
 
-        float projection[] = {
-             w,  0,  0,  0,
-             0,  h,  0,  0,
-             0,  0,  1,  0,
-            -1, -1,  0,  1,
-        };
-
-        glUniformMatrix4fv(projection_location, 1, GL_FALSE, projection);
-
-        glClearColor(24.0f/255.0f, 24.0f/255.0f, 24.0f/255.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+#if 1
         float margin = 5;
         float x = margin;
         float y = window.height + window.scroll;
@@ -294,12 +115,12 @@ int main(int argc, const char **argv) {
 
             if (i == window.cursor) {
                 float _x = x;
-                render_cursor(atlas, &x, y, &vertices[index]);
+                render_cursor(&atlas, &x, y, &vertices[index]);
                 x = _x;
                 index += 6;
-                render_char(atlas, &x, y, c, &vertices[index], BLACK);
+                render_char(&atlas, &x, y, c, &vertices[index], bg_color);
             } else {
-                render_char(atlas, &x, y, c, &vertices[index], WHITE);
+                render_char(&atlas, &x, y, c, &vertices[index], text_color);
             }
 
             index += 6;
@@ -307,6 +128,10 @@ int main(int argc, const char **argv) {
 
         glBufferData(GL_ARRAY_BUFFER, buffer_size, vertices, GL_DYNAMIC_DRAW);
         glDrawArrays(GL_TRIANGLES, 0, buffer_size / (sizeof(float) * 4 + sizeof(uint32_t)));
+#else
+        render_quad(&renderer, 10, 600, 200, 200, GREEN);
+        renderer_draw(&renderer);
+#endif
 
         win32_swap_buffers(&window);
     }

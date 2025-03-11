@@ -8,6 +8,17 @@
 #include <stdint.h>
 #include <math.h>
 
+#define array_add(xs, x)                                                \
+    do {                                                                \
+        if ((xs)->count >= (xs)->capacity) {                            \
+            if ((xs)->capacity == 0) (xs)->capacity = 256;              \
+            else (xs)->capacity *= 2;                                   \
+            (xs)->data = realloc((xs)->data, (xs)->capacity*sizeof(*(xs)->data)); \
+        }                                                               \
+                                                                        \
+        (xs)->data[(xs)->count++] = (x);                                \
+    } while (0)
+
 #define KB(sz) 1024*sz
 #define MB(sz) 1024*1024*sz
 
@@ -37,6 +48,13 @@ typedef struct {
 typedef struct {
     float x;
     float y;
+    float z;
+    float w;
+} Vec4f;
+
+typedef struct {
+    float x;
+    float y;
     float u;
     float v;
     uint32_t color;
@@ -44,6 +62,7 @@ typedef struct {
 
 File read_entire_file(const char *path);
 size_t file_size(const char *path);
+Vec4f hex_to_vec4f(uint32_t color);
 
 // TODO(marla): make sure we can malloc data and read into that AND
 // read into a generic buffer such as the scratch_buffer.

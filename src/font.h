@@ -27,4 +27,6 @@ typedef struct {
     float descent;
 } FontAtlas;
 
+void font_atlas_init(FontAtlas *atlas);
+
 #endif // FONT_H_
