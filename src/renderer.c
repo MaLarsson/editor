@@ -129,20 +129,24 @@ static compile_shaders(Renderer *renderer) {
     glShaderSource(text_shader, 1, &text_fragment_shader, NULL);
     glCompileShader(text_shader);
 
-    GLuint program = glCreateProgram();
-    glAttachShader(program, vertex);
-    // TODO(marla): create both shaders programs.
-    glAttachShader(program, basic_shader);
-    glLinkProgram(program);
+    GLuint basic_program = glCreateProgram();
+    glAttachShader(basic_program, vertex);
+    glAttachShader(basic_program, basic_shader);
+    glLinkProgram(basic_program);
+
+    GLuint text_program = glCreateProgram();
+    glAttachShader(text_program, vertex);
+    glAttachShader(text_program, text_shader);
+    glLinkProgram(text_program);
 
     glDeleteShader(vertex);
     glDeleteShader(basic_shader);
     glDeleteShader(text_shader);
 
-    glUseProgram(program);
+    glUseProgram(text_program);
 
-    renderer->text_program = program;
-    renderer->projection_location = glGetUniformLocation(program, "projection");
+    renderer->basic_program = basic_program;
+    renderer->text_program = text_program;
 }
 
 void renderer_init(Renderer *renderer) {
@@ -183,7 +187,13 @@ void renderer_update_screen_size(Renderer *renderer, int width, int height) {
         -1, -1,  0,  1,
     };
 
-    glUniformMatrix4fv(renderer->projection_location, 1, GL_FALSE, projection);
+    glUseProgram(renderer->text_program);
+    GLint text_projection = glGetUniformLocation(renderer->text_program, "projection");
+    glUniformMatrix4fv(text_projection, 1, GL_FALSE, projection);
+
+    glUseProgram(renderer->basic_program);
+    GLint basic_projection = glGetUniformLocation(renderer->basic_program, "projection");
+    glUniformMatrix4fv(basic_projection, 1, GL_FALSE, projection);
 }
 
 void renderer_clear_screen(uint32_t color) {
@@ -195,7 +205,12 @@ void renderer_clear_screen(uint32_t color) {
 void renderer_draw(Renderer *renderer) {
     size_t buffer_size = renderer->vertices.count * sizeof(Vertex);
     glBufferData(GL_ARRAY_BUFFER, buffer_size, renderer->vertices.data, GL_DYNAMIC_DRAW);
-    glDrawArrays(GL_TRIANGLES, 0, renderer->vertices.count);
+
+    glUseProgram(renderer->text_program);
+    glDrawArrays(GL_TRIANGLES, 0, renderer->vertices.count - 6);
+
+    glUseProgram(renderer->basic_program);
+    glDrawArrays(GL_TRIANGLES, renderer->vertices.count - 6, 6);
 }
 
 void renderer_begin_draw_call(Renderer *renderer, GLuint shader) {

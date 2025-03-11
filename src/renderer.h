@@ -63,7 +63,6 @@ typedef struct {
 typedef struct {
     GLuint text_program;
     GLuint basic_program;
-    GLint projection_location;
     GLuint vao;
     GLuint vbo;
 

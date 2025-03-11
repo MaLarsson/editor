@@ -39,15 +39,17 @@ int main(int argc, const char **argv) {
     FontAtlas atlas = {0};
     renderer_init_font_atlas(&atlas);
 
+#if 0
     File file = read_entire_file("src/main.c");
     size_t buffer_size = sizeof(Vertex) * 6 * file.size;
     Vertex *vertices = malloc(buffer_size);
+#endif
+
+    uint32_t bg_color = 0x242424FF;
+    uint32_t text_color = WHITE;
 
     while (!window.should_close) {
         win32_poll_events();
-
-        uint32_t bg_color = 0x242424FF;
-        uint32_t text_color = WHITE;
 
         renderer_reset_draw_data(&renderer);
         renderer_update_screen_size(&renderer, window.width, window.height);
@@ -91,7 +93,7 @@ int main(int argc, const char **argv) {
         float y = window.height + window.scroll;
         render_text(&renderer, &atlas, x, y, "hello world!", text_color);
 
-        render_quad(&renderer, 10, 600, 200, 200, GREEN);
+        render_quad(&renderer, 10, window.height - 600, 200, 200, GREEN);
         renderer_draw(&renderer);
 #endif
 
