@@ -1,6 +1,13 @@
 #include "common.h"
-#include "opengl.h"
+
+// TODO(marla): win32 should be moved into platform?
 #include "win32.h"
+
+// TODO(marla): opengl should be moved into renderer.
+//#include "opengl.h"
+#include "renderer.h"
+
+#include "font.h"
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -73,29 +80,6 @@ static void opengl_compile_shaders(void) {
     projection_location = glGetUniformLocation(program, "projection");
     texture_location = glGetUniformLocation(program, "Texture");
 }
-
-#define GLYPH_COUNT 255
-
-typedef struct Glyph {
-    float x;
-    float y;
-    float x_bearing;
-    float y_bearing;
-    float advance;
-    float width;
-    float height;
-} Glyph;
-
-typedef struct FontAtlas {
-    float texture_width;
-    float texture_height;
-    Glyph glyphs[GLYPH_COUNT];
-
-    float font_height;
-    float max_advance;
-    float ascent;
-    float descent;
-} FontAtlas;
 
 static size_t glyph_index(char c) {
     size_t index = c - ' ';
@@ -244,10 +228,8 @@ int main(int argc, const char **argv) {
     win32_init_window(&window, 1200, 1200, "Editor");
     win32_swap_interval(1);
 
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    //glBlendEquation(GL_FUNC_ADD);
-    //glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    Renderer renderer = {0};
+    renderer_init(&renderer);
 
     opengl_compile_shaders();
 
