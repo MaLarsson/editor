@@ -25,6 +25,18 @@ GLUniform1iProc glUniform1i = NULL;
 GLBindSamplerProc glBindSampler = NULL;
 GLBlendEquationProc glBlendEquation = NULL;
 GLBlendFuncSeparateProc glBlendFuncSeparate = NULL;
+GLGenTexturesProc glGenTextures = NULL;
+GLBindTextureProc glBindTexture = NULL;
+GLPixelStoreiProc glPixelStorei = NULL;
+GLTexParameteriProc glTexParameteri = NULL;
+GLTexImage2DProc glTexImage2D = NULL;
+GLTexSubImage2DProc glTexSubImage2D = NULL;
+GLEnableProc glEnable = NULL;
+GLBlendFuncProc glBlendFunc = NULL;
+GLViewportProc glViewport = NULL;
+GLClearColorProc glClearColor = NULL;
+GLClearProc glClear = NULL;
+GLDrawArraysProc glDrawArrays = NULL;
 
 void init_opengl(GetProcAddressProc load) {
     glCreateShader = load("glCreateShader");
@@ -52,4 +64,16 @@ void init_opengl(GetProcAddressProc load) {
     glBindSampler = load("glBindSampler");
     glBlendEquation = load("glBlendEquation");
     glBlendFuncSeparate = load("glBlendFuncSeparate");
+    glGenTextures = load("glGenTextures");
+    glBindTexture = load("glBindTexture");
+    glPixelStorei = load("glPixelStorei");
+    glTexParameteri = load("glTexParameteri");
+    glTexImage2D = load("glTexImage2D");
+    glTexSubImage2D = load("glTexSubImage2D");
+    glEnable = load("glEnable");
+    glBlendFunc = load("glBlendFunc");
+    glViewport = load("glViewport");
+    glClearColor = load("glClearColor");
+    glClear = load("glClear");
+    glDrawArrays = load("glDrawArrays");
 }

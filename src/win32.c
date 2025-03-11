@@ -69,6 +69,14 @@ LRESULT CALLBACK main_window_callback(HWND window, UINT message, WPARAM w_param,
     return result;
 }
 
+static HMODULE opengl_lib = NULL;
+
+static void *win32_get_proc_address(const char *name) {
+    void *proc = wglGetProcAddress(name);
+    if (proc) return proc;
+    return GetProcAddress(opengl_lib, name);
+}
+
 static void win32_init_opengl_extensions(void) {
     WNDCLASSA dummy_window_class = {0};
     dummy_window_class.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
@@ -115,7 +123,12 @@ static void win32_init_opengl_extensions(void) {
     wglCreateContextAttribsARB = (WGLCreateContextAttribsARBProc)wglGetProcAddress("wglCreateContextAttribsARB");
     wglChoosePixelFormatARB = (WGLChoosePixelFormatARBProc)wglGetProcAddress("wglChoosePixelFormatARB");
 
-    init_opengl((GetProcAddressProc)wglGetProcAddress);
+    opengl_lib = LoadLibraryA("opengl32.dll");
+    if (!opengl_lib) {
+        printf("ERROR: failed to load opengl32.dll\n");
+    }
+
+    init_opengl(win32_get_proc_address);
 
     if (!wglSwapIntervalEXT || !wglCreateContextAttribsARB || !wglChoosePixelFormatARB) {
         //printf("unable to load required opengl extensions\n");

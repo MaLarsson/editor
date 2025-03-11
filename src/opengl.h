@@ -11,6 +11,7 @@ typedef int GLint;
 typedef int GLsizei;
 typedef float GLfloat;
 typedef unsigned char GLboolean;
+typedef unsigned int GLbitfield;
 typedef ptrdiff_t GLsizeiptr;
 typedef char GLchar;
 
@@ -70,6 +71,18 @@ typedef void (OPENGL_API *GLUniform1iProc)(GLint location, GLint v0);
 typedef void (OPENGL_API *GLBindSamplerProc)(GLuint unit, GLuint sampler);
 typedef void (OPENGL_API *GLBlendEquationProc)(GLenum mode);
 typedef void (OPENGL_API *GLBlendFuncSeparateProc)(GLenum sfactorRGB, GLenum dfactorRGB, GLenum sfactorAlpha, GLenum dfactorAlpha);
+typedef void (OPENGL_API *GLGenTexturesProc)(GLsizei n, GLuint *textures);
+typedef void (OPENGL_API *GLBindTextureProc)(GLenum target, GLuint texture);
+typedef void (OPENGL_API *GLPixelStoreiProc)(GLenum pname, GLint param);
+typedef void (OPENGL_API *GLTexParameteriProc)(GLenum target, GLenum pname, GLint param);
+typedef void (OPENGL_API *GLTexImage2DProc)(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const void * data);
+typedef void (OPENGL_API *GLTexSubImage2DProc)(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const void * pixels);
+typedef void (OPENGL_API *GLEnableProc)(GLenum cap);
+typedef void (OPENGL_API *GLBlendFuncProc)(GLenum sfactor, GLenum dfactor);
+typedef void (OPENGL_API *GLViewportProc)(GLint x, GLint y, GLsizei width, GLsizei height);
+typedef void (OPENGL_API *GLClearColorProc)(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
+typedef void (OPENGL_API *GLClearProc)(GLbitfield mask);
+typedef void (OPENGL_API *GLDrawArraysProc)(GLenum mode, GLint first, GLsizei count);
 
 extern GLCreateShaderProc glCreateShader;
 extern GLDeleteShaderProc glDeleteShader;
@@ -96,5 +109,17 @@ extern GLUniform1iProc glUniform1i;
 extern GLBindSamplerProc glBindSampler;
 extern GLBlendEquationProc glBlendEquation;
 extern GLBlendFuncSeparateProc glBlendFuncSeparate;
+extern GLGenTexturesProc glGenTextures;
+extern GLBindTextureProc glBindTexture;
+extern GLPixelStoreiProc glPixelStorei;
+extern GLTexParameteriProc glTexParameteri;
+extern GLTexImage2DProc glTexImage2D;
+extern GLTexSubImage2DProc glTexSubImage2D;
+extern GLEnableProc glEnable;
+extern GLBlendFuncProc glBlendFunc;
+extern GLViewportProc glViewport;
+extern GLClearColorProc glClearColor;
+extern GLClearProc glClear;
+extern GLDrawArraysProc glDrawArrays;
 
 #endif // OPENGL_H_

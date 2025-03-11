@@ -2,13 +2,8 @@
 #include "opengl.h"
 #include "win32.h"
 
-// TODO(marla): remove windows.h and gl/gl.h and move free_type into font.c
-#include <windows.h>
-#include <gl/gl.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
-
-static bool window_should_close = false;
 
 static const char *vertex_shader =
     "#version 330 core\n"
@@ -155,12 +150,6 @@ static void create_font_atlas(FontAtlas *atlas) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, atlas->texture_width, atlas->texture_height, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
 
     GLsizei x_offset = 0;
-
-    /*
-    uint8_t white_buffer[4] = { 0xFF, 0xFF, 0xFF, 0xFF };
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 2, 2, GL_RED, GL_UNSIGNED_BYTE, white_buffer);
-    x_offset += 2;
-    */
 
     for (char c = ' '; c < '~'; c++) {
         if (FT_Load_Char(face, c, load_flags)) {
