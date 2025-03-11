@@ -1,5 +1,85 @@
 #include "renderer.h"
 
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
+size_t glyph_index(char c) {
+    size_t index = c - ' ';
+    // TODO(marla): return the glyph index for box?
+    assert(index < GLYPH_COUNT && "invalid glyph index");
+    return index;
+}
+
+void renderer_init_font_atlas(FontAtlas *atlas) {
+    glActiveTexture(GL_TEXTURE0);
+    glGenTextures(1, &atlas->texture);
+    glBindTexture(GL_TEXTURE_2D, atlas->texture);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+    FT_Library library;
+    if (FT_Init_FreeType(&library)) {
+        printf("error loading freetype library\n");
+    }
+
+    FT_Face face;
+    if (FT_New_Face(library, "C:/Windows/Fonts/consola.ttf", 0, &face)) {
+        printf("error loading font\n");
+    }
+
+    FT_Set_Pixel_Sizes(face, 0, 18);
+    atlas->font_height = face->size->metrics.height / 64.0f;
+    atlas->max_advance = face->size->metrics.max_advance / 64.0f;
+    atlas->ascent = face->size->metrics.ascender / 64.0f;
+    atlas->descent = face->size->metrics.descender / 64.0f;
+
+    atlas->texture_width = 0;
+    atlas->texture_height = 0;
+
+    FT_Int32 load_flags = FT_LOAD_RENDER | FT_LOAD_FORCE_AUTOHINT | FT_LOAD_TARGET_LIGHT;
+
+    for (char c = ' '; c < '~'; c++) {
+        if (FT_Load_Char(face, c, load_flags)) {
+            printf("ERROR: unable to load char\n");
+        }
+
+        atlas->texture_width += face->glyph->bitmap.width;
+        GLsizei h = face->glyph->bitmap.rows;
+        if (h > atlas->texture_height) atlas->texture_height = h;
+    }
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, atlas->texture_width, atlas->texture_height, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
+
+    GLsizei x_offset = 0;
+
+    for (char c = ' '; c < '~'; c++) {
+        if (FT_Load_Char(face, c, load_flags)) {
+            printf("ERROR: unable to load char\n");
+        }
+
+        size_t index = glyph_index(c);
+        Glyph *glyph = &atlas->glyphs[index];
+        glyph->x = x_offset;
+        glyph->y = 0;
+        glyph->x_bearing = face->glyph->bitmap_left;
+        glyph->y_bearing = face->glyph->bitmap_top;
+        glyph->advance = (face->glyph->advance.x >> 6);
+        glyph->width = face->glyph->bitmap.width;
+        glyph->height = face->glyph->bitmap.rows;
+
+        x_offset += glyph->width;
+        glTexSubImage2D(GL_TEXTURE_2D, 0, glyph->x, glyph->y, glyph->width, glyph->height, GL_RED, GL_UNSIGNED_BYTE, face->glyph->bitmap.buffer);
+    }
+
+    FT_Done_Face(face);
+    FT_Done_FreeType(library);
+}
+
 static const char *vertex_shader =
     "#version 330 core\n"
     "layout (location = 0) in vec2 pos;\n"
@@ -140,4 +220,45 @@ void render_quad(Renderer *renderer, float x, float y, float w, float h, uint32_
     array_add(&renderer->vertices, v3);
     array_add(&renderer->vertices, v4);
     array_add(&renderer->vertices, v5);
+}
+
+float render_glyph(Renderer *renderer, FontAtlas *font, float x, float y, char c, uint32_t color) {
+    int index = glyph_index(c);
+    Glyph *glyph = &font->glyphs[index];
+    float padding = (font->font_height - font->ascent + font->descent) / 2;
+
+    float char_h = glyph->height;
+    float char_w = glyph->width;
+    float x_pos = x + glyph->x_bearing;
+    float y_pos = y - padding - font->ascent - (char_h - glyph->y_bearing);
+
+    float x_uv_from = glyph->x / font->texture_width;
+    float x_uv_to = (glyph->x + glyph->width) / font->texture_width;
+    float y_uv_from = glyph->y / font->texture_height;
+    float y_uv_to = (glyph->y + glyph->height) / font->texture_height;
+
+    Vertex v0 = {x_pos,          y_pos,          x_uv_from, y_uv_to,   color};
+    Vertex v1 = {x_pos,          y_pos + char_h, x_uv_from, y_uv_from, color};
+    Vertex v2 = {x_pos + char_w, y_pos,          x_uv_to,   y_uv_to,   color};
+    Vertex v3 = {x_pos + char_w, y_pos,          x_uv_to,   y_uv_to,   color};
+    Vertex v4 = {x_pos,          y_pos + char_h, x_uv_from, y_uv_from, color};
+    Vertex v5 = {x_pos + char_w, y_pos + char_h, x_uv_to,   y_uv_from, color};
+
+    array_add(&renderer->vertices, v0);
+    array_add(&renderer->vertices, v1);
+    array_add(&renderer->vertices, v2);
+    array_add(&renderer->vertices, v3);
+    array_add(&renderer->vertices, v4);
+    array_add(&renderer->vertices, v5);
+
+    return glyph->advance;
+}
+
+float render_text(Renderer *renderer, FontAtlas *font, float x, float y, const char *text, uint32_t color) {
+    size_t len = strlen(text);
+    float offset = x;
+    for (size_t i = 0; i < len; ++i) {
+        offset += render_glyph(renderer, font, offset, y, text[i], color);
+    }
+    return offset - x;
 }

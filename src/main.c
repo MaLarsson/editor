@@ -1,20 +1,6 @@
 #include "common.h"
 #include "win32.h"
 #include "renderer.h"
-#include "font.h"
-
-static size_t glyph_index(char c) {
-    size_t index = c - ' ';
-    // TODO(marla): return the glyph index for box?
-    assert(index < GLYPH_COUNT && "invalid glyph index");
-    return index;
-}
-
-#define RED   0xFF0000FF
-#define GREEN 0x00FF00FF
-#define BLUE  0x0000FFFF
-#define WHITE 0xFFFFFFFF
-#define BLACK 0x000000FF
 
 static void render_cursor(FontAtlas *atlas, float *x, float y, Vertex *buffer) {
     float line_gap = atlas->font_height - (atlas->ascent - atlas->descent);
@@ -42,35 +28,6 @@ static void render_cursor(FontAtlas *atlas, float *x, float y, Vertex *buffer) {
     memcpy(buffer, vertices, sizeof(vertices));
 }
 
-static void render_char(FontAtlas *atlas, float *x, float y, char c, Vertex *buffer, uint32_t color) {
-    int index = glyph_index(c);
-    Glyph *glyph = &atlas->glyphs[index];
-    float padding = (atlas->font_height - atlas->ascent + atlas->descent) / 2;
-
-    float char_h = glyph->height;
-    float char_w = glyph->width;
-    float x_pos = *x + glyph->x_bearing;
-    float y_pos = y - padding - atlas->ascent - (char_h - glyph->y_bearing);
-
-    float x_uv_from = glyph->x / atlas->texture_width;
-    float x_uv_to = (glyph->x + glyph->width) / atlas->texture_width;
-    float y_uv_from = glyph->y / atlas->texture_height;
-    float y_uv_to = (glyph->y + glyph->height) / atlas->texture_height;
-
-    Vertex vertices[] = {
-        {x_pos,          y_pos,          x_uv_from, y_uv_to,   color},
-        {x_pos,          y_pos + char_h, x_uv_from, y_uv_from, color},
-        {x_pos + char_w, y_pos,          x_uv_to,   y_uv_to,   color},
-
-        {x_pos + char_w, y_pos,          x_uv_to,   y_uv_to,   color},
-        {x_pos,          y_pos + char_h, x_uv_from, y_uv_from, color},
-        {x_pos + char_w, y_pos + char_h, x_uv_to,   y_uv_from, color},
-    };
-
-    *x = *x + glyph->advance;
-    memcpy(buffer, vertices, sizeof(vertices));
-}
-
 int main(int argc, const char **argv) {
     Window window = {0};
     win32_init_window(&window, 1200, 1200, "Editor");
@@ -80,7 +37,7 @@ int main(int argc, const char **argv) {
     renderer_init(&renderer);
 
     FontAtlas atlas = {0};
-    font_atlas_init(&atlas);
+    renderer_init_font_atlas(&atlas);
 
     File file = read_entire_file("src/main.c");
     size_t buffer_size = sizeof(Vertex) * 6 * file.size;
@@ -96,7 +53,7 @@ int main(int argc, const char **argv) {
         renderer_update_screen_size(&renderer, window.width, window.height);
         renderer_clear_screen(bg_color);
 
-#if 1
+#if 0
         float margin = 5;
         float x = margin;
         float y = window.height + window.scroll;
@@ -129,6 +86,11 @@ int main(int argc, const char **argv) {
         glBufferData(GL_ARRAY_BUFFER, buffer_size, vertices, GL_DYNAMIC_DRAW);
         glDrawArrays(GL_TRIANGLES, 0, buffer_size / (sizeof(float) * 4 + sizeof(uint32_t)));
 #else
+        float margin = 5;
+        float x = margin;
+        float y = window.height + window.scroll;
+        render_text(&renderer, &atlas, x, y, "hello world!", text_color);
+
         render_quad(&renderer, 10, 600, 200, 200, GREEN);
         renderer_draw(&renderer);
 #endif
