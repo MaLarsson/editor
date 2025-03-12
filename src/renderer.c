@@ -206,11 +206,11 @@ void renderer_draw(Renderer *renderer) {
     size_t buffer_size = renderer->vertices.count * sizeof(Vertex);
     glBufferData(GL_ARRAY_BUFFER, buffer_size, renderer->vertices.data, GL_DYNAMIC_DRAW);
 
-    glUseProgram(renderer->text_program);
-    glDrawArrays(GL_TRIANGLES, 0, renderer->vertices.count - 6);
-
     glUseProgram(renderer->basic_program);
     glDrawArrays(GL_TRIANGLES, renderer->vertices.count - 6, 6);
+
+    glUseProgram(renderer->text_program);
+    glDrawArrays(GL_TRIANGLES, 0, renderer->vertices.count - 6);
 }
 
 void renderer_begin_draw_call(Renderer *renderer, GLuint shader) {
@@ -238,6 +238,8 @@ void render_quad(Renderer *renderer, float x, float y, float w, float h, uint32_
 }
 
 float render_glyph(Renderer *renderer, FontAtlas *font, float x, float y, char c, uint32_t color) {
+    if (c == '\r' || c == '\n' || c == '\t') return 0.0f;
+
     int index = glyph_index(c);
     Glyph *glyph = &font->glyphs[index];
     float padding = (font->font_height - font->ascent + font->descent) / 2;
@@ -269,11 +271,10 @@ float render_glyph(Renderer *renderer, FontAtlas *font, float x, float y, char c
     return glyph->advance;
 }
 
-float render_text(Renderer *renderer, FontAtlas *font, float x, float y, const char *text, uint32_t color) {
-    size_t len = strlen(text);
+float render_text(Renderer *renderer, FontAtlas *font, float x, float y, StringView text, uint32_t color) {
     float offset = x;
-    for (size_t i = 0; i < len; ++i) {
-        offset += render_glyph(renderer, font, offset, y, text[i], color);
+    for (size_t i = 0; i < text.len; ++i) {
+        offset += render_glyph(renderer, font, offset, y, text.data[i], color);
     }
     return offset - x;
 }

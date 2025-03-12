@@ -206,7 +206,7 @@ void win32_init_window(Window *window, int width, int height, const char *title)
         //return 1;
     }
 
-    window->handle = CreateWindowExA(0, window_class.lpszClassName, "Hello, World!", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+    window->handle = CreateWindowExA(0, window_class.lpszClassName, title, WS_OVERLAPPEDWINDOW | WS_VISIBLE,
                                      CW_USEDEFAULT, CW_USEDEFAULT, width, height, 0, 0, window_class.hInstance, 0);
     if (!window->handle) {
         printf("unable to create window\n");

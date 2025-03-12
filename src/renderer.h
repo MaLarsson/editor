@@ -65,7 +65,6 @@ typedef struct {
     GLuint basic_program;
     GLuint vao;
     GLuint vbo;
-
     Vertices vertices;
     Indices indices;
     DrawCalls draw_calls;
@@ -82,6 +81,6 @@ void renderer_end_draw_call(Renderer *renderer);
 
 void render_quad(Renderer *renderer, float x, float y, float w, float h, uint32_t color);
 float render_glyph(Renderer *renderer, FontAtlas *font, float x, float y, char c, uint32_t color);
-float render_text(Renderer *renderer, FontAtlas *font, float x, float y, const char *text, uint32_t color);
+float render_text(Renderer *renderer, FontAtlas *font, float x, float y, StringView text, uint32_t color);
 
 #endif // RENDERER_H_

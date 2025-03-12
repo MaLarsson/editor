@@ -34,6 +34,9 @@ typedef struct {
     size_t size;
 } File;
 
+File read_entire_file(const char *path);
+size_t file_size(const char *path);
+
 typedef struct {
     float x;
     float y;
@@ -52,6 +55,8 @@ typedef struct {
     float w;
 } Vec4f;
 
+Vec4f hex_to_vec4f(uint32_t color);
+
 typedef struct {
     float x;
     float y;
@@ -60,9 +65,10 @@ typedef struct {
     uint32_t color;
 } Vertex;
 
-File read_entire_file(const char *path);
-size_t file_size(const char *path);
-Vec4f hex_to_vec4f(uint32_t color);
+typedef struct {
+    const char *data;
+    size_t len;
+} StringView;
 
 // TODO(marla): make sure we can malloc data and read into that AND
 // read into a generic buffer such as the scratch_buffer.
