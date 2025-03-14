@@ -1,24 +1,7 @@
 #include "common.h"
-#include "win32.h"
+#include "editor.h"
 #include "renderer.h"
-
-typedef struct {
-    File *data;
-    uint32_t count;
-    uint32_t capacity;
-} Files;
-
-typedef struct {
-    uint32_t background_color;
-    uint32_t text_color;
-    uint32_t highlight_color;
-    uint32_t cursor_color;
-} Theme;
-
-typedef struct {
-    Files files;
-    Theme theme;
-} Editor;
+#include "win32.h"
 
 int main(int argc, const char **argv) {
     Window window = {0};
@@ -39,7 +22,7 @@ int main(int argc, const char **argv) {
     array_add(&editor.files, read_entire_file("src/main.c"));
 
     while (!window.should_close) {
-        win32_poll_events();
+        win32_poll_events(&window, &editor);
 
         renderer_reset_draw_data(&renderer);
         renderer_update_screen_size(&renderer, window.width, window.height);

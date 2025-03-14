@@ -199,6 +199,7 @@ void win32_init_window(Window *window, int width, int height, const char *title)
     window_class.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
     window_class.lpfnWndProc = main_window_callback;
     window_class.hInstance = GetModuleHandle(NULL);
+    window_class.hCursor = LoadCursor(NULL, IDC_ARROW);
     window_class.lpszClassName = "MainWindow";
 
     if (!RegisterClassA(&window_class)) {
@@ -217,7 +218,7 @@ void win32_init_window(Window *window, int width, int height, const char *title)
     window->opengl_rc = win32_init_opengl(window->dc);
 }
 
-void win32_poll_events(void) {
+void win32_poll_events(Window *window, Editor *editor) {
     MSG message;
     while (PeekMessage(&message, NULL, 0, 0, PM_REMOVE)) {
         TranslateMessage(&message);
