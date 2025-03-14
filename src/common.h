@@ -2,6 +2,7 @@
 #define COMMON_H_
 
 #include <assert.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>

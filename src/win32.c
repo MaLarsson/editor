@@ -41,30 +41,30 @@ static Window *g_window = NULL;
 LRESULT CALLBACK main_window_callback(HWND window, UINT message, WPARAM w_param, LPARAM l_param) {
     LRESULT result = 0;
     switch (message) {
-    case WM_MOUSEWHEEL:
+    case WM_MOUSEWHEEL: {
         g_window->scroll -= GET_WHEEL_DELTA_WPARAM(w_param);
-        break;
-    case WM_KEYDOWN:
+    } break;
+    case WM_KEYDOWN: {
         if (w_param == VK_RIGHT) g_window->cursor += 1;
         if (w_param == VK_LEFT) g_window->cursor -= 1;
         if (w_param == VK_CONTROL) ctrl_down = true;
         if (w_param == 'F' && ctrl_down) g_window->cursor += 1;
         if (w_param == 'B' && ctrl_down) g_window->cursor -= 1;
-        break;
-    case WM_KEYUP:
+    } break;
+    case WM_KEYUP: {
         if (w_param == VK_CONTROL) ctrl_down = false;
-        break;
-    case WM_SIZE:
+    } break;
+    case WM_SIZE: {
         g_window->width = LOWORD(l_param);
         g_window->height = HIWORD(l_param);
-        break;
-    case WM_CLOSE:
-    case WM_DESTROY:
+    } break;
+    case WM_CLOSE: // fallthrough.
+    case WM_DESTROY: {
         g_window->should_close = true;
-        break;
-    default:
+    } break;
+    default: {
         result = DefWindowProcA(window, message, w_param, l_param);
-        break;
+    } break;
     }
     return result;
 }

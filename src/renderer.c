@@ -206,11 +206,13 @@ void renderer_draw(Renderer *renderer) {
     size_t buffer_size = renderer->vertices.count * sizeof(Vertex);
     glBufferData(GL_ARRAY_BUFFER, buffer_size, renderer->vertices.data, GL_DYNAMIC_DRAW);
 
+    glUseProgram(renderer->text_program);
+    glDrawArrays(GL_TRIANGLES, 0, renderer->vertices.count);
+
+    /*
     glUseProgram(renderer->basic_program);
     glDrawArrays(GL_TRIANGLES, renderer->vertices.count - 6, 6);
-
-    glUseProgram(renderer->text_program);
-    glDrawArrays(GL_TRIANGLES, 0, renderer->vertices.count - 6);
+    */
 }
 
 void renderer_begin_draw_call(Renderer *renderer, GLuint shader) {

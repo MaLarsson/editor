@@ -48,47 +48,50 @@ int main(int argc, const char **argv) {
         float margin = 5;
         float x = margin;
         float y = window.height + window.scroll;
+        int tab_width = 4;
 
         File *file = &editor.files.data[0];
 
-        const char *start = file->buffer + 1;
-        bool carriage_return = false;
+        size_t i = 0;
 
-        x += render_glyph(&renderer, &atlas, x, y, file->buffer[0], editor.theme.background_color);
-
-        for (size_t i = 1; i < file->size; ++i) {
+        while (i < file->size) {
             char c = file->buffer[i];
-            if (c == '\r' || c == '\n') {
-                const char *end = &file->buffer[i];
-                size_t len = end - start;
-                if (len > 0 && !carriage_return) {
-                    StringView text = {start, len};
-                    render_text(&renderer, &atlas, x, y, text, editor.theme.text_color);
-                    x = margin;
-                    y -= atlas.font_height;
+
+            switch (c) {
+            case ' ': {
+                x += atlas.max_advance;
+            } break;
+            case '\r': {
+                // do nothing.
+            } break;
+            case '\n': {
+                x = margin;
+                y -= atlas.font_height;
+            } break;
+            case '\t': {
+                x += atlas.max_advance * tab_width;
+            } break;
+            default: {
+                // tokenize.
+                size_t start = i;
+                while (file->buffer[i + 1] != '\0' && !isspace(file->buffer[i + 1])) {
+                    ++i;
                 }
-                carriage_return = (c == '\r');
-                start = end;
+
+                StringView text = {&file->buffer[start], i - start + 1};
+                x += render_text(&renderer, &atlas, x, y, text, editor.theme.text_color);
+            } break;
             }
+
+            ++i;
         }
 
         /*
-        const char *text = "hello world this is a long string printed over multiple lines.";
-
-        x += render_glyph(&renderer, &atlas, x, y, text[0], editor.theme.background_color);
-        StringView view0 = {text + 1, 10};
-        render_text(&renderer, &atlas, x, y, view0, editor.theme.text_color);
-
-        x = margin;
-        y -= atlas.font_height;
-        StringView view1 = {text + 12, strlen(text) - 12};
-        render_text(&renderer, &atlas, x, y, view1, editor.theme.text_color);
-        */
-
         float line_gap = atlas.font_height - (atlas.ascent - atlas.descent);
         float h = atlas.font_height - line_gap;
         float w = atlas.max_advance;
         render_quad(&renderer, margin, window.height + window.scroll - h, w, h, editor.theme.cursor_color);
+        */
 
         renderer_draw(&renderer);
         win32_swap_buffers(&window);
