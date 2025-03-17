@@ -27,16 +27,14 @@ typedef BOOL (WINAPI *WGLSwapIntervalExtProc)(int interval);
 typedef HGLRC (WINAPI *WGLCreateContextAttribsARBProc)(HDC hDC, HGLRC hShareContext, const int *attribList);
 typedef BOOL (WINAPI *WGLChoosePixelFormatARBProc)(HDC hdc, const int *piAttribIList, const FLOAT *pfAttribFList, UINT nMaxFormats, int *piFormats, UINT *nNumFormats);
 
-static bool ctrl_down = false;
-
 static WGLSwapIntervalExtProc wglSwapIntervalEXT;
 static WGLCreateContextAttribsARBProc wglCreateContextAttribsARB;
 static WGLChoosePixelFormatARBProc wglChoosePixelFormatARB;
 
-static int window_width = 1200;
-static int window_height = 1200;
-
 static Window *g_window = NULL;
+
+static bool ctrl_down = false;
+static bool alt_down = false;
 
 LRESULT CALLBACK main_window_callback(HWND window, UINT message, WPARAM w_param, LPARAM l_param) {
     LRESULT result = 0;
@@ -44,15 +42,30 @@ LRESULT CALLBACK main_window_callback(HWND window, UINT message, WPARAM w_param,
     case WM_MOUSEWHEEL: {
         g_window->scroll = max(0, g_window->scroll - GET_WHEEL_DELTA_WPARAM(w_param));
     } break;
+    case WM_SYSCHAR: {
+        // TODO(marla): do nothing?
+    } break;
+    case WM_SYSKEYDOWN: // fallthrough.
     case WM_KEYDOWN: {
         if (w_param == VK_RIGHT) g_window->cursor += 1;
-        if (w_param == VK_LEFT) g_window->cursor = max(0, g_window->cursor - 1);
-        if (w_param == VK_CONTROL) ctrl_down = true;
-        if (w_param == 'F' && ctrl_down) g_window->cursor += 1;
-        if (w_param == 'B' && ctrl_down) g_window->cursor = max(0, g_window->cursor - 1);
+        else if (w_param == VK_LEFT) g_window->cursor = max(0, g_window->cursor - 1);
+        else if (w_param == VK_CONTROL) ctrl_down = true;
+        else if (w_param == VK_MENU) alt_down = true;
+        else if (w_param == 'F') {
+            if (alt_down) g_window->cursor += 10; // TODO(marla): move forward by word, not 10 chars.
+            else if (ctrl_down) g_window->cursor += 1;
+        } else if (w_param == 'B') {
+            if (alt_down) g_window->cursor = max(0, g_window->cursor - 10); // TODO(marla): move back by word, not 10 chars.
+            else if (ctrl_down) g_window->cursor = max(0, g_window->cursor - 1);
+        } else if (w_param == 'N') {
+            if (ctrl_down) printf("move down one line!\n");
+        } else if (w_param == 'P') {
+            if (ctrl_down) printf("move up one line!\n");
+        }
     } break;
     case WM_KEYUP: {
         if (w_param == VK_CONTROL) ctrl_down = false;
+        else if (w_param == VK_MENU) alt_down = false;
     } break;
     case WM_SIZE: {
         g_window->width = LOWORD(l_param);
