@@ -42,14 +42,14 @@ LRESULT CALLBACK main_window_callback(HWND window, UINT message, WPARAM w_param,
     LRESULT result = 0;
     switch (message) {
     case WM_MOUSEWHEEL: {
-        g_window->scroll -= GET_WHEEL_DELTA_WPARAM(w_param);
+        g_window->scroll = max(0, g_window->scroll - GET_WHEEL_DELTA_WPARAM(w_param));
     } break;
     case WM_KEYDOWN: {
         if (w_param == VK_RIGHT) g_window->cursor += 1;
-        if (w_param == VK_LEFT) g_window->cursor -= 1;
+        if (w_param == VK_LEFT) g_window->cursor = max(0, g_window->cursor - 1);
         if (w_param == VK_CONTROL) ctrl_down = true;
         if (w_param == 'F' && ctrl_down) g_window->cursor += 1;
-        if (w_param == 'B' && ctrl_down) g_window->cursor -= 1;
+        if (w_param == 'B' && ctrl_down) g_window->cursor = max(0, g_window->cursor - 1);
     } break;
     case WM_KEYUP: {
         if (w_param == VK_CONTROL) ctrl_down = false;

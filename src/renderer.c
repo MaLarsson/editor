@@ -206,13 +206,11 @@ void renderer_draw(Renderer *renderer) {
     size_t buffer_size = renderer->vertices.count * sizeof(Vertex);
     glBufferData(GL_ARRAY_BUFFER, buffer_size, renderer->vertices.data, GL_DYNAMIC_DRAW);
 
-    glUseProgram(renderer->text_program);
-    glDrawArrays(GL_TRIANGLES, 0, renderer->vertices.count);
-
-    /*
     glUseProgram(renderer->basic_program);
-    glDrawArrays(GL_TRIANGLES, renderer->vertices.count - 6, 6);
-    */
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+
+    glUseProgram(renderer->text_program);
+    glDrawArrays(GL_TRIANGLES, 6, renderer->vertices.count - 6);
 }
 
 void renderer_begin_draw_call(Renderer *renderer, GLuint shader) {
@@ -259,8 +257,8 @@ float render_glyph(Renderer *renderer, FontAtlas *font, float x, float y, char c
     Vertex v0 = {x_pos,          y_pos,          x_uv_from, y_uv_to,   color};
     Vertex v1 = {x_pos,          y_pos + char_h, x_uv_from, y_uv_from, color};
     Vertex v2 = {x_pos + char_w, y_pos,          x_uv_to,   y_uv_to,   color};
-    Vertex v3 = {x_pos + char_w, y_pos,          x_uv_to,   y_uv_to,   color};
-    Vertex v4 = {x_pos,          y_pos + char_h, x_uv_from, y_uv_from, color};
+    Vertex v3 = {x_pos + char_w, y_pos,          x_uv_to,   y_uv_to,   color}; // duplicate v2
+    Vertex v4 = {x_pos,          y_pos + char_h, x_uv_from, y_uv_from, color}; // duplicate v1
     Vertex v5 = {x_pos + char_w, y_pos + char_h, x_uv_to,   y_uv_from, color};
 
     array_add(&renderer->vertices, v0);

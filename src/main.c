@@ -35,9 +35,44 @@ int main(int argc, const char **argv) {
 
         File *file = &editor.files.data[0];
 
-        size_t i = 0;
+        // render quads.
+        // cursor, hightlightning, file info bar, etc.
+        for (size_t i = 0; i < file->size; ++i) {
+            if (i == window.cursor) {
+                float line_gap = atlas.font_height - (atlas.ascent - atlas.descent);
+                float h = atlas.font_height - line_gap;
+                float w = atlas.max_advance;
+                render_quad(&renderer, x, y - h, w, h, editor.theme.cursor_color);
+                break;
+            }
 
-        while (i < file->size) {
+            char c = file->buffer[i];
+
+            switch (c) {
+            case ' ': {
+                x += atlas.max_advance;
+            } break;
+            case '\r': {
+                // do nothing.
+            } break;
+            case '\n': {
+                x = margin;
+                y -= atlas.font_height;
+            } break;
+            case '\t': {
+                x += atlas.max_advance * tab_width;
+            } break;
+            default: {
+                x += atlas.glyphs[glyph_index(c)].advance;
+            } break;
+            }
+        }
+
+        x = margin;
+        y = window.height + window.scroll;
+
+        // render all the characters.
+        for (size_t i = 0; i < file->size; ++i) {
             char c = file->buffer[i];
 
             switch (c) {
@@ -61,20 +96,22 @@ int main(int argc, const char **argv) {
                     ++i;
                 }
 
-                StringView text = {&file->buffer[start], i - start + 1};
-                x += render_text(&renderer, &atlas, x, y, text, editor.theme.text_color);
+                uint32_t text_color = editor.theme.text_color;
+                uint32_t bg_color = editor.theme.background_color;
+
+                if (start <= window.cursor && i >= window.cursor) {
+                    StringView prefix = {&file->buffer[start], window.cursor - start};
+                    StringView suffix = {&file->buffer[window.cursor + 1], i - window.cursor};
+                    x += render_text(&renderer, &atlas, x, y, prefix, text_color);
+                    x += render_glyph(&renderer, &atlas, x, y, file->buffer[window.cursor], bg_color);
+                    x += render_text(&renderer, &atlas, x, y, suffix, text_color);
+                } else {
+                    StringView text = {&file->buffer[start], i - start + 1};
+                    x += render_text(&renderer, &atlas, x, y, text, text_color);
+                }
             } break;
             }
-
-            ++i;
         }
-
-        /*
-        float line_gap = atlas.font_height - (atlas.ascent - atlas.descent);
-        float h = atlas.font_height - line_gap;
-        float w = atlas.max_advance;
-        render_quad(&renderer, margin, window.height + window.scroll - h, w, h, editor.theme.cursor_color);
-        */
 
         renderer_draw(&renderer);
         win32_swap_buffers(&window);
