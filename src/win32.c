@@ -85,9 +85,9 @@ LRESULT CALLBACK main_window_callback(HWND window, UINT message, WPARAM w_param,
 static HMODULE opengl_lib = NULL;
 
 static void *win32_get_proc_address(const char *name) {
-    void *proc = wglGetProcAddress(name);
+    void *proc = (void *)wglGetProcAddress(name);
     if (proc) return proc;
-    return GetProcAddress(opengl_lib, name);
+    return (void *)GetProcAddress(opengl_lib, name);
 }
 
 static void win32_init_opengl_extensions(void) {
@@ -232,6 +232,9 @@ void win32_init_window(Window *window, int width, int height, const char *title)
 }
 
 void win32_poll_events(Window *window, Editor *editor) {
+    (void)window;
+    (void)editor;
+
     MSG message;
     while (PeekMessage(&message, NULL, 0, 0, PM_REMOVE)) {
         TranslateMessage(&message);

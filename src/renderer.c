@@ -50,10 +50,10 @@ void renderer_init_font_atlas(FontAtlas *atlas) {
 
         atlas->texture_width += face->glyph->bitmap.width;
         GLsizei h = face->glyph->bitmap.rows;
-        if (h > atlas->texture_height) atlas->texture_height = h;
+        if (h > atlas->texture_height) atlas->texture_height = (float)h;
     }
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, atlas->texture_width, atlas->texture_height, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, (GLsizei)atlas->texture_width, (GLsizei)atlas->texture_height, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
 
     GLsizei x_offset = 0;
 
@@ -62,18 +62,20 @@ void renderer_init_font_atlas(FontAtlas *atlas) {
             printf("ERROR: unable to load char\n");
         }
 
+        // TODO(marla): maybe we should not convert from and to float all the time.
         size_t index = glyph_index(c);
         Glyph *glyph = &atlas->glyphs[index];
-        glyph->x = x_offset;
+        glyph->x = (float)x_offset;
         glyph->y = 0;
-        glyph->x_bearing = face->glyph->bitmap_left;
-        glyph->y_bearing = face->glyph->bitmap_top;
-        glyph->advance = (face->glyph->advance.x >> 6);
-        glyph->width = face->glyph->bitmap.width;
-        glyph->height = face->glyph->bitmap.rows;
+        glyph->x_bearing = (float)face->glyph->bitmap_left;
+        glyph->y_bearing = (float)face->glyph->bitmap_top;
+        glyph->advance = (float)(face->glyph->advance.x >> 6);
+        glyph->width = (float)face->glyph->bitmap.width;
+        glyph->height = (float)face->glyph->bitmap.rows;
 
-        x_offset += glyph->width;
-        glTexSubImage2D(GL_TEXTURE_2D, 0, glyph->x, glyph->y, glyph->width, glyph->height, GL_RED, GL_UNSIGNED_BYTE, face->glyph->bitmap.buffer);
+        x_offset += (GLsizei)glyph->width;
+        glTexSubImage2D(GL_TEXTURE_2D, 0, (GLint)glyph->x, (GLint)glyph->y, (GLsizei)glyph->width, (GLsizei)glyph->height,
+                        GL_RED, GL_UNSIGNED_BYTE, face->glyph->bitmap.buffer);
     }
 
     FT_Done_Face(face);
@@ -116,7 +118,9 @@ static const char *text_fragment_shader =
     "    gl_FragColor = vec4(out_color.rgb, texture(atlas, out_uv).r);\n"
     "}\n";
 
-static compile_shaders(Renderer *renderer) {
+static void compile_shaders(Renderer *renderer) {
+    (void)renderer;
+
     GLuint vertex = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertex, 1, &vertex_shader, NULL);
     glCompileShader(vertex);
@@ -214,10 +218,13 @@ void renderer_draw(Renderer *renderer) {
 }
 
 void renderer_begin_draw_call(Renderer *renderer, GLuint shader) {
+    (void)renderer;
+    (void)shader;
     // ...
 }
 
 void renderer_end_draw_call(Renderer *renderer) {
+    (void)renderer;
     // ...
 }
 
@@ -240,7 +247,7 @@ void render_quad(Renderer *renderer, float x, float y, float w, float h, uint32_
 float render_glyph(Renderer *renderer, FontAtlas *font, float x, float y, char c, uint32_t color) {
     if (c == '\r' || c == '\n' || c == '\t') return 0.0f;
 
-    int index = glyph_index(c);
+    size_t index = glyph_index(c);
     Glyph *glyph = &font->glyphs[index];
     float padding = (font->font_height - font->ascent + font->descent) / 2;
 

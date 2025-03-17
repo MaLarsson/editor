@@ -17,7 +17,7 @@ typedef struct {
     int cursor;
 } Window;
 
-void win32_create_window(Window *window, int width, int height, const char *title);
+void win32_init_window(Window *window, int width, int height, const char *title);
 void win32_poll_events(Window *window, Editor *editor);
 void win32_swap_buffers(Window *window);
 void win32_swap_interval(int interval);

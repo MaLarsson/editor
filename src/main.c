@@ -4,6 +4,10 @@
 #include "win32.h"
 
 int main(int argc, const char **argv) {
+    // TODO(marla): unused.
+    (void)argc;
+    (void)argv;
+
     Window window = {0};
     win32_init_window(&window, 1200, 1200, "Editor");
     win32_swap_interval(1);
@@ -30,7 +34,7 @@ int main(int argc, const char **argv) {
 
         float margin = 5;
         float x = margin;
-        float y = window.height + window.scroll;
+        float y = (float)window.height + (float)window.scroll;
         int tab_width = 4;
 
         File *file = &editor.files.data[0];
@@ -69,7 +73,7 @@ int main(int argc, const char **argv) {
         }
 
         x = margin;
-        y = window.height + window.scroll;
+        y = (float)window.height + (float)window.scroll;
 
         // render all the characters.
         for (size_t i = 0; i < file->size; ++i) {
