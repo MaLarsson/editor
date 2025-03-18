@@ -11,10 +11,6 @@ typedef struct {
     bool should_close;
     int width;
     int height;
-
-    // TODO(marla): should this be moved?
-    int scroll;
-    int cursor;
 } Window;
 
 void win32_init_window(Window *window, int width, int height, const char *title);

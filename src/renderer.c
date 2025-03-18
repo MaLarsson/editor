@@ -43,7 +43,7 @@ void renderer_init_font_atlas(FontAtlas *atlas) {
 
     FT_Int32 load_flags = FT_LOAD_RENDER | FT_LOAD_FORCE_AUTOHINT | FT_LOAD_TARGET_LIGHT;
 
-    for (char c = ' '; c < '~'; c++) {
+    for (char c = ' '; c < '~'; ++c) {
         if (FT_Load_Char(face, c, load_flags)) {
             printf("ERROR: unable to load char\n");
         }
@@ -57,7 +57,7 @@ void renderer_init_font_atlas(FontAtlas *atlas) {
 
     GLsizei x_offset = 0;
 
-    for (char c = ' '; c < '~'; c++) {
+    for (char c = ' '; c < '~'; ++c) {
         if (FT_Load_Char(face, c, load_flags)) {
             printf("ERROR: unable to load char\n");
         }

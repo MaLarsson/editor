@@ -19,6 +19,10 @@ typedef struct {
 typedef struct {
     Files files;
     Theme theme;
+
+    // TODO(marla): these should be per file?
+    int cursor;
+    int scroll;
 } Editor;
 
 void editor_move_cursor_up(Editor *editor);

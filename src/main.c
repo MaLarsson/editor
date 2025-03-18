@@ -34,7 +34,7 @@ int main(int argc, const char **argv) {
 
         float margin = 5;
         float x = margin;
-        float y = (float)window.height + (float)window.scroll;
+        float y = (float)window.height + (float)editor.scroll;
         int tab_width = 4;
 
         File *file = &editor.files.data[0];
@@ -42,7 +42,7 @@ int main(int argc, const char **argv) {
         // render quads.
         // cursor, hightlightning, file info bar, etc.
         for (size_t i = 0; i < file->size; ++i) {
-            if (i == window.cursor) {
+            if (i == editor.cursor) {
                 float line_gap = atlas.font_height - (atlas.ascent - atlas.descent);
                 float h = atlas.font_height - line_gap;
                 float w = atlas.max_advance;
@@ -73,7 +73,7 @@ int main(int argc, const char **argv) {
         }
 
         x = margin;
-        y = (float)window.height + (float)window.scroll;
+        y = (float)window.height + (float)editor.scroll;
 
         // render all the characters.
         for (size_t i = 0; i < file->size; ++i) {
@@ -103,11 +103,11 @@ int main(int argc, const char **argv) {
                 uint32_t text_color = editor.theme.text_color;
                 uint32_t bg_color = editor.theme.background_color;
 
-                if (start <= window.cursor && i >= window.cursor) {
-                    StringView prefix = {&file->buffer[start], window.cursor - start};
-                    StringView suffix = {&file->buffer[window.cursor + 1], i - window.cursor};
+                if (start <= editor.cursor && i >= editor.cursor) {
+                    StringView prefix = {&file->buffer[start], editor.cursor - start};
+                    StringView suffix = {&file->buffer[editor.cursor + 1], i - editor.cursor};
                     x += render_text(&renderer, &atlas, x, y, prefix, text_color);
-                    x += render_glyph(&renderer, &atlas, x, y, file->buffer[window.cursor], bg_color);
+                    x += render_glyph(&renderer, &atlas, x, y, file->buffer[editor.cursor], bg_color);
                     x += render_text(&renderer, &atlas, x, y, suffix, text_color);
                 } else {
                     StringView text = {&file->buffer[start], i - start + 1};

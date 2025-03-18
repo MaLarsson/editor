@@ -39,33 +39,8 @@ static bool alt_down = false;
 LRESULT CALLBACK main_window_callback(HWND window, UINT message, WPARAM w_param, LPARAM l_param) {
     LRESULT result = 0;
     switch (message) {
-    case WM_MOUSEWHEEL: {
-        g_window->scroll = max(0, g_window->scroll - GET_WHEEL_DELTA_WPARAM(w_param));
-    } break;
     case WM_SYSCHAR: {
         // TODO(marla): do nothing?
-    } break;
-    case WM_SYSKEYDOWN: // fallthrough.
-    case WM_KEYDOWN: {
-        if (w_param == VK_RIGHT) g_window->cursor += 1;
-        else if (w_param == VK_LEFT) g_window->cursor = max(0, g_window->cursor - 1);
-        else if (w_param == VK_CONTROL) ctrl_down = true;
-        else if (w_param == VK_MENU) alt_down = true;
-        else if (w_param == 'F') {
-            if (alt_down) g_window->cursor += 10; // TODO(marla): move forward by word, not 10 chars.
-            else if (ctrl_down) g_window->cursor += 1;
-        } else if (w_param == 'B') {
-            if (alt_down) g_window->cursor = max(0, g_window->cursor - 10); // TODO(marla): move back by word, not 10 chars.
-            else if (ctrl_down) g_window->cursor = max(0, g_window->cursor - 1);
-        } else if (w_param == 'N') {
-            if (ctrl_down) printf("move down one line!\n");
-        } else if (w_param == 'P') {
-            if (ctrl_down) printf("move up one line!\n");
-        }
-    } break;
-    case WM_KEYUP: {
-        if (w_param == VK_CONTROL) ctrl_down = false;
-        else if (w_param == VK_MENU) alt_down = false;
     } break;
     case WM_SIZE: {
         g_window->width = LOWORD(l_param);
@@ -202,8 +177,6 @@ static HGLRC win32_init_opengl(HDC window_dc) {
 void win32_init_window(Window *window, int width, int height, const char *title) {
     // TODO(marla): remove these?
     g_window = window;
-    window->scroll = 0;
-    window->cursor = 0;
 
     window->width = 1200;
     window->height = 1200;
@@ -233,12 +206,40 @@ void win32_init_window(Window *window, int width, int height, const char *title)
 
 void win32_poll_events(Window *window, Editor *editor) {
     (void)window;
-    (void)editor;
 
     MSG message;
     while (PeekMessage(&message, NULL, 0, 0, PM_REMOVE)) {
-        TranslateMessage(&message);
-        DispatchMessageA(&message);
+        switch (message.message) {
+        case WM_MOUSEWHEEL: {
+            editor->scroll = max(0, editor->scroll - GET_WHEEL_DELTA_WPARAM(message.wParam));
+        } break;
+        case WM_SYSKEYDOWN: // fallthrough.
+        case WM_KEYDOWN: {
+            if (message.wParam == VK_RIGHT) editor_move_cursor_forward(editor);
+            else if (message.wParam == VK_LEFT) editor_move_cursor_backward(editor);
+            else if (message.wParam == VK_CONTROL) ctrl_down = true;
+            else if (message.wParam == VK_MENU) alt_down = true;
+            else if (message.wParam == 'F') {
+                if (alt_down) editor_move_cursor_forward_word(editor);
+                else if (ctrl_down) editor_move_cursor_forward(editor);
+            } else if (message.wParam == 'B') {
+                if (alt_down) editor_move_cursor_backward_word(editor);
+                else if (ctrl_down) editor_move_cursor_backward(editor);
+            } else if (message.wParam == 'N') {
+                if (ctrl_down) editor_move_cursor_down(editor);
+            } else if (message.wParam == 'P') {
+                if (ctrl_down) editor_move_cursor_up(editor);
+            }
+        } break;
+        case WM_KEYUP: {
+            if (message.wParam == VK_CONTROL) ctrl_down = false;
+            else if (message.wParam == VK_MENU) alt_down = false;
+        } break;
+        default: {
+            TranslateMessage(&message);
+            DispatchMessageA(&message);
+        } break;
+        }
     }
 }
 
