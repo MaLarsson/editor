@@ -9,15 +9,18 @@ void editor_move_cursor_up(Editor *editor) {
 void editor_move_cursor_down(Editor *editor) {
     File *file = &editor->files.data[0];
 
-    int offset = 1;
-    while (editor->cursor - offset > 0 && file->buffer[editor->cursor - offset - 1] != '\n') {
-        offset += 1;
+    int temp_cursor = editor->cursor;
+    while (temp_cursor > 0 && file->buffer[temp_cursor - 1] != '\n') {
+        temp_cursor -= 1;
+    }
+    int offset = editor->cursor - temp_cursor;
+
+    while (file->buffer[editor->cursor] != '\n') {
+        editor->cursor += 1;
     }
 
-    printf("%d\n", offset);
-    printf("move down one line!\n");
-
-    // TODO(marla)
+    // TODO(marla): handle if this line is shorter than offset.
+    editor->cursor += offset + 1;
 }
 
 void editor_move_cursor_forward(Editor *editor) {
