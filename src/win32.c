@@ -229,6 +229,10 @@ void win32_poll_events(Window *window, Editor *editor) {
                 if (ctrl_down) editor_move_cursor_down(editor);
             } else if (message.wParam == 'P') {
                 if (ctrl_down) editor_move_cursor_up(editor);
+            } else if (message.wParam == 'A') {
+                if (ctrl_down) editor_move_cursor_start_of_line(editor);
+            } else if (message.wParam == 'E') {
+                if (ctrl_down) editor_move_cursor_end_of_line(editor);
             }
         } break;
         case WM_KEYUP: {

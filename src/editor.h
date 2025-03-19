@@ -23,6 +23,7 @@ typedef struct {
     // TODO(marla): these should be per file?
     int cursor;
     int scroll;
+    int vertical_move_offset_cache;
 } Editor;
 
 void editor_move_cursor_up(Editor *editor);
@@ -31,5 +32,7 @@ void editor_move_cursor_forward(Editor *editor);
 void editor_move_cursor_forward_word(Editor *editor);
 void editor_move_cursor_backward(Editor *editor);
 void editor_move_cursor_backward_word(Editor *editor);
+void editor_move_cursor_start_of_line(Editor *editor);
+void editor_move_cursor_end_of_line(Editor *editor);
 
 #endif // EDITOR_H_
