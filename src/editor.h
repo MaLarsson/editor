@@ -35,4 +35,12 @@ void editor_move_cursor_backward_word(Editor *editor);
 void editor_move_cursor_start_of_line(Editor *editor);
 void editor_move_cursor_end_of_line(Editor *editor);
 
+void editor_type_char(Editor *editor, char c);
+void editor_backspace(Editor *editor);
+void editor_backspace_word(Editor *editor);
+void editor_delete(Editor *editor);
+
+void editor_scroll_up(Editor *editor);
+void editor_scroll_down(Editor *editor);
+
 #endif // EDITOR_H_

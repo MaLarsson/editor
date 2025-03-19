@@ -35,6 +35,7 @@ static Window *g_window = NULL;
 
 static bool ctrl_down = false;
 static bool alt_down = false;
+static bool shift_down = false;
 
 LRESULT CALLBACK main_window_callback(HWND window, UINT message, WPARAM w_param, LPARAM l_param) {
     LRESULT result = 0;
@@ -213,13 +214,38 @@ void win32_poll_events(Window *window, Editor *editor) {
         case WM_MOUSEWHEEL: {
             editor->scroll = max(0, editor->scroll - GET_WHEEL_DELTA_WPARAM(message.wParam));
         } break;
+        case WM_CHAR: {
+            if (message.wParam >= ' ' && message.wParam <= '~') {
+                editor_type_char(editor, (char)message.wParam);
+                //printf("%c\n", (char)message.wParam);
+            }
+        } break;
         case WM_SYSKEYDOWN: // fallthrough.
         case WM_KEYDOWN: {
-            if (message.wParam == VK_RIGHT) editor_move_cursor_forward(editor);
-            else if (message.wParam == VK_LEFT) editor_move_cursor_backward(editor);
-            else if (message.wParam == VK_CONTROL) ctrl_down = true;
+            // ???
+            //HKL layout = GetKeyboardLayout(0);
+            //UINT vk = MapVirtualKeyExA((UINT)message.wParam, MAPVK_VSC_TO_VK_EX, layout);
+            //printf("vk: %u, char: %c\n", vk, (char)vk);
+            if (message.wParam == VK_CONTROL) ctrl_down = true;
             else if (message.wParam == VK_MENU) alt_down = true;
-            else if (message.wParam == 'F') {
+            else if (message.wParam == VK_SHIFT) shift_down = true;
+            else if (message.wParam == VK_RIGHT) editor_move_cursor_forward(editor);
+            else if (message.wParam == VK_LEFT) editor_move_cursor_backward(editor);
+
+            // VK_BACK
+            // VK_RETURN
+            // VK_DELETE
+
+            bool modifier_down = alt_down || ctrl_down;
+            //printf("%d\n", modifier_down);
+
+            if (!modifier_down) {
+                TranslateMessage(&message);
+                DispatchMessageA(&message);
+                break;
+            }
+
+            if (message.wParam == 'F') {
                 if (alt_down) editor_move_cursor_forward_word(editor);
                 else if (ctrl_down) editor_move_cursor_forward(editor);
             } else if (message.wParam == 'B') {
@@ -233,11 +259,15 @@ void win32_poll_events(Window *window, Editor *editor) {
                 if (ctrl_down) editor_move_cursor_start_of_line(editor);
             } else if (message.wParam == 'E') {
                 if (ctrl_down) editor_move_cursor_end_of_line(editor);
+            } else if (message.wParam == 'Z') {
+                if (alt_down && !ctrl_down) editor_scroll_up(editor);
+                else if (ctrl_down && !alt_down) editor_scroll_down(editor);
             }
         } break;
         case WM_KEYUP: {
             if (message.wParam == VK_CONTROL) ctrl_down = false;
             else if (message.wParam == VK_MENU) alt_down = false;
+            else if (message.wParam == VK_SHIFT) shift_down = false;
         } break;
         default: {
             TranslateMessage(&message);

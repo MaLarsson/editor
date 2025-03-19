@@ -12,14 +12,22 @@ void editor_move_cursor_up(Editor *editor) {
     }
 
     int offset = editor->vertical_move_offset_cache;
+    int old_cursor = editor->cursor;
 
-    // TODO(marla): handle beginning of file.
-    while (file->buffer[editor->cursor] != '\n') {
+    while (editor->cursor > 0 && file->buffer[editor->cursor] != '\n') {
         editor->cursor -= 1;
     }
+
+    if (editor->cursor == 0) {
+        // cursor is already on first line, dont move.
+        editor->cursor = old_cursor;
+        return;
+    }
+
     editor->cursor -= 1;
     while (file->buffer[editor->cursor] != '\n') {
         editor->cursor -= 1;
+        if (editor->cursor == -1) break;
     }
     editor->cursor += 1;
 
@@ -124,4 +132,31 @@ void editor_move_cursor_end_of_line(Editor *editor) {
     while (file->buffer[editor->cursor] != '\r' && file->buffer[editor->cursor] != '\n') {
         editor->cursor += 1;
     }
+}
+
+void editor_type_char(Editor *editor, char c) {
+    File *file = &editor->files.data[0];
+    file->buffer[editor->cursor++] = c;
+}
+
+void editor_backspace(Editor *editor) {
+    (void)editor;
+}
+
+void editor_backspace_word(Editor *editor) {
+    (void)editor;
+}
+
+void editor_delete(Editor *editor) {
+    (void)editor;
+}
+
+void editor_scroll_up(Editor *editor) {
+    // TODO(marla): scroll exactly one line.
+    editor->scroll = max(0, editor->scroll - 21);
+}
+
+void editor_scroll_down(Editor *editor) {
+    // TODO(marla): scroll exactly one line.
+    editor->scroll += 21;
 }
