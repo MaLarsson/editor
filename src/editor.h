@@ -2,6 +2,7 @@
 #define EDITOR_H_
 
 #include "common.h"
+#include "renderer.h"
 
 typedef struct {
     File *data;
@@ -17,13 +18,23 @@ typedef struct {
 } Theme;
 
 typedef struct {
+    // TODO(marla): what is needed for syntax highlighting and indentation?
+    int dummy;
+} Mode;
+
+typedef struct {
     Files files;
     Theme theme;
+
+    // TODO(marla): should this live on the editor?
+    FontAtlas font;
 
     // TODO(marla): these should be per file?
     int cursor;
     int scroll;
     int vertical_move_offset_cache;
+    int mark;
+    Mode mode;
 } Editor;
 
 void editor_move_cursor_up(Editor *editor);
