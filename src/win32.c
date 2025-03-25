@@ -179,10 +179,6 @@ static HGLRC win32_init_opengl(HDC window_dc) {
 }
 
 void win32_init_window(Window *window, int width, int height, const char *title) {
-    // TODO(marla): what is the actual size after we add the titlebar etc?
-    window->width = width;
-    window->height = height;
-
     WNDCLASSA window_class = {0};
     window_class.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
     window_class.lpfnWndProc = main_window_callback;
@@ -202,6 +198,11 @@ void win32_init_window(Window *window, int width, int height, const char *title)
         //return 2;
     }
 
+    RECT window_rect;
+    GetClientRect(window->handle, &window_rect);
+    window->width = window_rect.right;
+    window->height = window_rect.bottom;
+
     SetPropA(window->handle, "window", window);
 
     window->dc = GetDC(window->handle);
@@ -209,7 +210,7 @@ void win32_init_window(Window *window, int width, int height, const char *title)
 }
 
 void win32_poll_events(Window *window, Editor *editor) {
-    (void)window;
+    UNUSED(window);
 
     MSG message;
     while (PeekMessage(&message, NULL, 0, 0, PM_REMOVE)) {

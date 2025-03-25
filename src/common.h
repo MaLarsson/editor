@@ -3,11 +3,14 @@
 
 #include <assert.h>
 #include <ctype.h>
+#include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <math.h>
+
+#define UNUSED(x) (void)(x)
 
 #define array_add(xs, x)                                                \
     do {                                                                \
@@ -20,8 +23,8 @@
         (xs)->data[(xs)->count++] = (x);                                \
     } while (0)
 
-#define KB(sz) 1024*sz
-#define MB(sz) 1024*1024*sz
+#define KB(sz) (1024*(sz))
+#define MB(sz) (1024*1024*(sz))
 
 #define MAX_SCRATCH_BUFFER MB(10)
 
