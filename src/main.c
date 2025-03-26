@@ -14,7 +14,9 @@ static size_t gap_buffer_gap_size(GapBuffer *buffer) {
     return buffer->capacity - buffer->count;
 }
 
-static void gap_buffer_realloc(GapBuffer *buffer) {
+static void gap_buffer_grow(GapBuffer *buffer, size_t size) {
+    UNUSED(size);
+
     size_t gap_size = gap_buffer_gap_size(buffer);
     buffer->capacity *= 2;
     buffer->data = realloc(buffer->data, buffer->capacity);
@@ -26,8 +28,50 @@ static void gap_buffer_realloc(GapBuffer *buffer) {
     memmove(tail_start, new_tail_start, tail_length);
 }
 
+static void gap_buffer_move_gap(GapBuffer *buffer, size_t index) {
+    UNUSED(buffer);
+    UNUSED(index);
+    // TODO(marla): actually move the gap.
+}
+
+void gap_buffer_insert_string(GapBuffer *buffer, size_t index, const char *string) {
+    if (index != buffer->gap) {
+        gap_buffer_move_gap(buffer, index);
+    }
+    size_t len = strlen(string);
+    memcpy(&buffer->data[buffer->gap], string, len);
+    buffer->gap += len;
+    buffer->count += len;
+}
+
+void gap_buffer_insert_char(GapBuffer *buffer, size_t index, char c) {
+    if (index != buffer->gap) {
+        gap_buffer_move_gap(buffer, index);
+    }
+    buffer->data[buffer->gap++] = c;
+    buffer->count += 1;
+}
+
 static void gap_buffer_dump(GapBuffer *buffer) {
     printf("count: %llu, capacity: %llu\n", buffer->count, buffer->capacity);
+    printf("data: \"");
+
+    for (size_t i = 0; i < buffer->gap; ++i) {
+        printf("%c", buffer->data[i]);
+    }
+
+    printf("[");
+    size_t gap_size = gap_buffer_gap_size(buffer);
+    for (size_t i = 0; i < gap_size; ++i) {
+        printf(" ");
+    }
+    printf("]");
+
+    for (size_t i = buffer->gap + gap_size; i < buffer->capacity; ++i) {
+        printf("%c", buffer->data[i]);
+    }
+
+    printf("\"\n");
 }
 
 int main(int argc, const char **argv) {
@@ -36,6 +80,23 @@ int main(int argc, const char **argv) {
 
     GapBuffer buffer = {0};
     gap_buffer_dump(&buffer);
+
+    buffer.data = malloc(sizeof(char) * 32);
+    buffer.count = 0;
+    buffer.capacity = 32;
+    buffer.gap = 0;
+    gap_buffer_dump(&buffer);
+
+    gap_buffer_insert_string(&buffer, 0, "hello world");
+    gap_buffer_dump(&buffer);
+
+    gap_buffer_insert_char(&buffer, buffer.gap, '!');
+    gap_buffer_insert_char(&buffer, buffer.gap, '~');
+    gap_buffer_insert_char(&buffer, buffer.gap, '~');
+    gap_buffer_dump(&buffer);
+
+    // dealloc.
+    free(buffer.data);
 
 #if 0
     Window window = {0};

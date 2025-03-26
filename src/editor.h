@@ -23,13 +23,6 @@ typedef struct {
 } Mode;
 
 typedef struct {
-    char *data;
-    size_t count;
-    size_t capacity;
-    size_t gap;
-} GapBuffer;
-
-typedef struct {
     Files files;
     Theme theme;
 
