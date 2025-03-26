@@ -119,7 +119,7 @@ static const char *text_fragment_shader =
     "}\n";
 
 static void compile_shaders(Renderer *renderer) {
-    (void)renderer;
+    UNUSED(renderer);
 
     GLuint vertex = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertex, 1, &vertex_shader, NULL);
@@ -218,13 +218,13 @@ void renderer_draw(Renderer *renderer) {
 }
 
 void renderer_begin_draw_call(Renderer *renderer, GLuint shader) {
-    (void)renderer;
-    (void)shader;
+    UNUSED(renderer);
+    UNUSED(shader);
     // ...
 }
 
 void renderer_end_draw_call(Renderer *renderer) {
-    (void)renderer;
+    UNUSED(renderer);
     // ...
 }
 

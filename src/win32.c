@@ -31,28 +31,31 @@ static WGLSwapIntervalExtProc wglSwapIntervalEXT;
 static WGLCreateContextAttribsARBProc wglCreateContextAttribsARB;
 static WGLChoosePixelFormatARBProc wglChoosePixelFormatARB;
 
-static Window *g_window = NULL;
-
 static bool ctrl_down = false;
 static bool alt_down = false;
 static bool shift_down = false;
 
-LRESULT CALLBACK main_window_callback(HWND window, UINT message, WPARAM w_param, LPARAM l_param) {
+LRESULT CALLBACK main_window_callback(HWND hwnd, UINT message, WPARAM w_param, LPARAM l_param) {
+    Window *window = GetPropA(hwnd, "window");
+    if (!window) {
+        return DefWindowProcA(hwnd, message, w_param, l_param);
+    }
+
     LRESULT result = 0;
     switch (message) {
     case WM_SYSCHAR: {
         // TODO(marla): do nothing?
     } break;
     case WM_SIZE: {
-        g_window->width = LOWORD(l_param);
-        g_window->height = HIWORD(l_param);
+        window->width = LOWORD(l_param);
+        window->height = HIWORD(l_param);
     } break;
     case WM_CLOSE: // fallthrough.
     case WM_DESTROY: {
-        g_window->should_close = true;
+        window->should_close = true;
     } break;
     default: {
-        result = DefWindowProcA(window, message, w_param, l_param);
+        result = DefWindowProcA(hwnd, message, w_param, l_param);
     } break;
     }
     return result;
@@ -176,12 +179,6 @@ static HGLRC win32_init_opengl(HDC window_dc) {
 }
 
 void win32_init_window(Window *window, int width, int height, const char *title) {
-    // TODO(marla): remove these?
-    g_window = window;
-
-    window->width = 1200;
-    window->height = 1200;
-
     WNDCLASSA window_class = {0};
     window_class.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
     window_class.lpfnWndProc = main_window_callback;
@@ -201,12 +198,19 @@ void win32_init_window(Window *window, int width, int height, const char *title)
         //return 2;
     }
 
+    RECT window_rect;
+    GetClientRect(window->handle, &window_rect);
+    window->width = window_rect.right;
+    window->height = window_rect.bottom;
+
+    SetPropA(window->handle, "window", window);
+
     window->dc = GetDC(window->handle);
     window->opengl_rc = win32_init_opengl(window->dc);
 }
 
 void win32_poll_events(Window *window, Editor *editor) {
-    (void)window;
+    UNUSED(window);
 
     MSG message;
     while (PeekMessage(&message, NULL, 0, 0, PM_REMOVE)) {
