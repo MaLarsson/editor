@@ -20,8 +20,8 @@
         (xs)->data[(xs)->count++] = (x);                                \
     } while (0)
 
-#define KB(sz) 1024*sz
-#define MB(sz) 1024*1024*sz
+#define KB(sz) (1024*(sz))
+#define MB(sz) (1024*1024*(sz))
 
 #define MAX_SCRATCH_BUFFER MB(10)
 

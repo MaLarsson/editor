@@ -23,6 +23,13 @@ typedef struct {
 } Mode;
 
 typedef struct {
+    char *data;
+    size_t count;
+    size_t capacity;
+    size_t gap;
+} GapBuffer;
+
+typedef struct {
     Files files;
     Theme theme;
 
@@ -36,6 +43,8 @@ typedef struct {
     int mark;
     Mode mode;
 } Editor;
+
+void editor_render_file(Editor *editor, int width, int height, Renderer *renderer);
 
 void editor_move_cursor_up(Editor *editor);
 void editor_move_cursor_down(Editor *editor);

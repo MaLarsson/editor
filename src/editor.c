@@ -1,4 +1,94 @@
 #include "editor.h"
+#include "win32.h"
+
+void editor_render_file(Editor *editor, int width, int height, Renderer *renderer) {
+    (void)width;
+
+    float margin = 5;
+    float x = margin;
+    float y = (float)height + (float)editor->scroll;
+    int tab_width = 4;
+
+    File *file = &editor->files.data[0];
+
+    // render quads.
+    // cursor, hightlightning, file info bar, etc.
+    for (size_t i = 0; i < file->size; ++i) {
+        if (i == editor->cursor) {
+            float line_gap = editor->font.font_height - (editor->font.ascent - editor->font.descent);
+            float h = editor->font.font_height - line_gap;
+            float w = editor->font.max_advance;
+            render_quad(renderer, x, y - h, w, h, editor->theme.cursor_color);
+            break;
+        }
+
+        char c = file->buffer[i];
+
+        switch (c) {
+        case ' ': {
+            x += editor->font.max_advance;
+        } break;
+        case '\r': {
+            // do nothing.
+        } break;
+        case '\n': {
+            x = margin;
+            y -= editor->font.font_height;
+        } break;
+        case '\t': {
+            x += editor->font.max_advance * tab_width;
+        } break;
+        default: {
+            x += editor->font.glyphs[glyph_index(c)].advance;
+        } break;
+        }
+    }
+
+    x = margin;
+    y = (float)height + (float)editor->scroll;
+
+    // render all the characters.
+    for (size_t i = 0; i < file->size; ++i) {
+        char c = file->buffer[i];
+
+        switch (c) {
+        case ' ': {
+            x += editor->font.max_advance;
+        } break;
+        case '\r': {
+            // do nothing.
+        } break;
+        case '\n': {
+            x = margin;
+            y -= editor->font.font_height;
+        } break;
+        case '\t': {
+            x += editor->font.max_advance * tab_width;
+        } break;
+        default: {
+            // tokenize.
+            size_t start = i;
+            while (file->buffer[i + 1] != '\0' && !isspace(file->buffer[i + 1])) {
+                ++i;
+            }
+
+            uint32_t text_color = editor->theme.text_color;
+            uint32_t bg_color = editor->theme.background_color;
+
+            if (start <= editor->cursor && i >= editor->cursor) {
+                StringView prefix = {&file->buffer[start], editor->cursor - start};
+                StringView suffix = {&file->buffer[editor->cursor + 1], i - editor->cursor};
+                x += render_text(renderer, &editor->font, x, y, prefix, text_color);
+                x += render_glyph(renderer, &editor->font, x, y, file->buffer[editor->cursor], bg_color);
+                x += render_text(renderer, &editor->font, x, y, suffix, text_color);
+            } else {
+                StringView text = {&file->buffer[start], i - start + 1};
+                x += render_text(renderer, &editor->font, x, y, text, text_color);
+            }
+        } break;
+        }
+    }
+}
 
 void editor_move_cursor_up(Editor *editor) {
     File *file = &editor->files.data[0];
