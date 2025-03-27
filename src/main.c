@@ -27,6 +27,7 @@ static void gap_buffer_grow(GapBuffer *buffer, size_t size) {
 
 static void gap_buffer_move_gap(GapBuffer *buffer, size_t index) {
     size_t gap_size = gap_buffer_gap_size(buffer);
+
     if (index < buffer->gap) {
         size_t len = buffer->gap - index;
         memmove(&buffer->data[buffer->gap + gap_size - len], &buffer->data[index], len);
@@ -47,6 +48,7 @@ void gap_buffer_init(GapBuffer *buffer, size_t capacity) {
 void gap_buffer_insert_string(GapBuffer *buffer, size_t index, const char *string) {
     size_t len = strlen(string);
     if (index != buffer->gap) gap_buffer_move_gap(buffer, index);
+
     memcpy(&buffer->data[buffer->gap], string, len);
     buffer->gap += len;
     buffer->count += len;
@@ -54,6 +56,7 @@ void gap_buffer_insert_string(GapBuffer *buffer, size_t index, const char *strin
 
 void gap_buffer_insert_char(GapBuffer *buffer, size_t index, char c) {
     if (index != buffer->gap) gap_buffer_move_gap(buffer, index);
+
     buffer->data[buffer->gap++] = c;
     buffer->count += 1;
 }
