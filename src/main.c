@@ -35,6 +35,7 @@ static void gap_buffer_move_gap(GapBuffer *buffer, size_t index) {
         size_t len = index - buffer->gap;
         memmove(&buffer->data[buffer->gap], &buffer->data[buffer->gap + gap_size], len);
     }
+
     buffer->gap = index;
 }
 
