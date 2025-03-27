@@ -15,39 +15,45 @@ static size_t gap_buffer_gap_size(GapBuffer *buffer) {
 }
 
 static void gap_buffer_grow(GapBuffer *buffer, size_t size) {
-    UNUSED(size);
-
     size_t gap_size = gap_buffer_gap_size(buffer);
-    buffer->capacity *= 2;
+    buffer->capacity = size;
     buffer->data = realloc(buffer->data, buffer->capacity);
 
-    size_t tail_length = buffer->count - buffer->gap;
+    size_t len = buffer->count - buffer->gap;
     char *tail_start = &buffer->data[buffer->gap + gap_size];
     char *new_tail_start = &buffer->data[buffer->gap + gap_buffer_gap_size(buffer)];
-
-    memmove(tail_start, new_tail_start, tail_length);
+    memmove(new_tail_start, tail_start, len);
 }
 
 static void gap_buffer_move_gap(GapBuffer *buffer, size_t index) {
-    UNUSED(buffer);
-    UNUSED(index);
-    // TODO(marla): actually move the gap.
+    size_t gap_size = gap_buffer_gap_size(buffer);
+    if (index < buffer->gap) {
+        size_t len = buffer->gap - index;
+        memmove(&buffer->data[buffer->gap + gap_size - len], &buffer->data[index], len);
+    } else {
+        size_t len = index - buffer->gap;
+        memmove(&buffer->data[buffer->gap], &buffer->data[buffer->gap + gap_size], len);
+    }
+    buffer->gap = index;
+}
+
+void gap_buffer_init(GapBuffer *buffer, size_t capacity) {
+    buffer->data = malloc(sizeof(char) * capacity);
+    buffer->count = 0;
+    buffer->capacity = capacity;
+    buffer->gap = 0;
 }
 
 void gap_buffer_insert_string(GapBuffer *buffer, size_t index, const char *string) {
-    if (index != buffer->gap) {
-        gap_buffer_move_gap(buffer, index);
-    }
     size_t len = strlen(string);
+    if (index != buffer->gap) gap_buffer_move_gap(buffer, index);
     memcpy(&buffer->data[buffer->gap], string, len);
     buffer->gap += len;
     buffer->count += len;
 }
 
 void gap_buffer_insert_char(GapBuffer *buffer, size_t index, char c) {
-    if (index != buffer->gap) {
-        gap_buffer_move_gap(buffer, index);
-    }
+    if (index != buffer->gap) gap_buffer_move_gap(buffer, index);
     buffer->data[buffer->gap++] = c;
     buffer->count += 1;
 }
@@ -81,10 +87,7 @@ int main(int argc, const char **argv) {
     GapBuffer buffer = {0};
     gap_buffer_dump(&buffer);
 
-    buffer.data = malloc(sizeof(char) * 32);
-    buffer.count = 0;
-    buffer.capacity = 32;
-    buffer.gap = 0;
+    gap_buffer_init(&buffer, 32);
     gap_buffer_dump(&buffer);
 
     gap_buffer_insert_string(&buffer, 0, "hello world");
@@ -93,6 +96,15 @@ int main(int argc, const char **argv) {
     gap_buffer_insert_char(&buffer, buffer.gap, '!');
     gap_buffer_insert_char(&buffer, buffer.gap, '~');
     gap_buffer_insert_char(&buffer, buffer.gap, '~');
+    gap_buffer_dump(&buffer);
+
+    gap_buffer_insert_string(&buffer, 3, "xxx");
+    gap_buffer_dump(&buffer);
+
+    gap_buffer_move_gap(&buffer, 11);
+    gap_buffer_dump(&buffer);
+
+    gap_buffer_grow(&buffer, buffer.capacity * 2);
     gap_buffer_dump(&buffer);
 
     // dealloc.
