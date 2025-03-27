@@ -2,7 +2,7 @@
 #include "win32.h"
 
 void editor_render_file(Editor *editor, int width, int height, Renderer *renderer) {
-    (void)width;
+    UNUSED(width);
 
     float margin = 5;
     float x = margin;
