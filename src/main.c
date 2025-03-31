@@ -39,6 +39,17 @@ static void gap_buffer_move_gap(GapBuffer *buffer, size_t index) {
     buffer->gap = index;
 }
 
+size_t gap_buffer_index(GapBuffer *buffer, size_t index) {
+    if (index >= buffer->gap) {
+        return index + gap_buffer_gap_size(buffer);
+    }
+    return index;
+}
+
+char gap_buffer_at(GapBuffer *buffer, size_t index) {
+    return buffer->data[gap_buffer_index(buffer, index)];
+}
+
 void gap_buffer_init(GapBuffer *buffer, size_t capacity) {
     buffer->data = malloc(sizeof(char) * capacity);
     buffer->count = 0;
@@ -60,23 +71,6 @@ void gap_buffer_insert_char(GapBuffer *buffer, size_t index, char c) {
 
     buffer->data[buffer->gap++] = c;
     buffer->count += 1;
-}
-
-size_t gap_buffer_begin(GapBuffer *buffer) {
-    UNUSED(buffer);
-    // TODO(marla): what if the gap is at the beginning of the buffer?
-    return 0;
-}
-
-size_t gap_buffer_end(GapBuffer *buffer) {
-    // TODO(marla): what if the gap is at the end of the buffer?
-    return buffer->capacity;
-}
-
-size_t gap_buffer_advance(GapBuffer *buffer, size_t index) {
-    index += 1;
-    if (index == buffer->gap) return index + gap_buffer_gap_size(buffer);
-    return index;
 }
 
 static void gap_buffer_dump(GapBuffer *buffer) {
@@ -128,13 +122,11 @@ int main(int argc, const char **argv) {
     gap_buffer_grow(&buffer, buffer.capacity * 2);
     gap_buffer_dump(&buffer);
 
-    size_t end = gap_buffer_end(&buffer);
-    size_t i = gap_buffer_begin(&buffer);
-
-    while (i < end) {
-        printf("%c", buffer.data[i]);
-        i = gap_buffer_advance(&buffer, i);
+    printf("\"");
+    for (size_t i = 0; i < buffer.count; ++i) {
+        printf("%c", gap_buffer_at(&buffer, i));
     }
+    printf("\"\n");
 
     // dealloc.
     free(buffer.data);
