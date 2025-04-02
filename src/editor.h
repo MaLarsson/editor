@@ -23,13 +23,13 @@ typedef struct {
 } Mode;
 
 typedef struct {
-    Files files;
     Theme theme;
 
     // TODO(marla): should this live on the editor?
     FontAtlas font;
 
     // TODO(marla): these should be per file?
+    GapBuffer buffer;
     int cursor;
     int scroll;
     int vertical_move_offset_cache;

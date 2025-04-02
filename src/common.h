@@ -78,4 +78,19 @@ typedef struct {
 // read into a generic buffer such as the scratch_buffer.
 //int read_entire_file_into_buffer(unit8_t *buffer, const char *path);
 
+typedef struct {
+    char *data;
+    size_t count;
+    size_t capacity;
+    size_t gap;
+} GapBuffer;
+
+size_t gap_buffer_index(GapBuffer *buffer, size_t index);
+char gap_buffer_at(GapBuffer *buffer, size_t index);
+void gap_buffer_init(GapBuffer *buffer, size_t capacity);
+void gap_buffer_insert(GapBuffer *buffer, size_t index, const char *string, size_t len);
+void gap_buffer_insert_string(GapBuffer *buffer, size_t index, const char *string);
+void gap_buffer_insert_char(GapBuffer *buffer, size_t index, char c);
+void gap_buffer_dump(GapBuffer *buffer);
+
 #endif // COMMON_H_

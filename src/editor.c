@@ -9,11 +9,11 @@ void editor_render_file(Editor *editor, int width, int height, Renderer *rendere
     float y = (float)height + (float)editor->scroll;
     int tab_width = 4;
 
-    File *file = &editor->files.data[0];
+    GapBuffer *buffer = &editor->buffer;
 
     // render quads.
     // cursor, hightlightning, file info bar, etc.
-    for (size_t i = 0; i < file->size; ++i) {
+    for (size_t i = 0; i < buffer->count; ++i) {
         if (i == editor->cursor) {
             float line_gap = editor->font.font_height - (editor->font.ascent - editor->font.descent);
             float h = editor->font.font_height - line_gap;
@@ -22,7 +22,7 @@ void editor_render_file(Editor *editor, int width, int height, Renderer *rendere
             break;
         }
 
-        char c = file->buffer[i];
+        char c = gap_buffer_at(buffer, i);
 
         switch (c) {
         case ' ': {
@@ -48,8 +48,8 @@ void editor_render_file(Editor *editor, int width, int height, Renderer *rendere
     y = (float)height + (float)editor->scroll;
 
     // render all the characters.
-    for (size_t i = 0; i < file->size; ++i) {
-        char c = file->buffer[i];
+    for (size_t i = 0; i < buffer->count; ++i) {
+        char c = gap_buffer_at(buffer, i);
 
         switch (c) {
         case ' ': {
@@ -67,14 +67,16 @@ void editor_render_file(Editor *editor, int width, int height, Renderer *rendere
         } break;
         default: {
             // tokenize.
-            size_t start = i;
-            while (file->buffer[i + 1] != '\0' && !isspace(file->buffer[i + 1])) {
+            //size_t start = i;
+            while (gap_buffer_at(buffer, i + 1) != '\0' && !isspace(gap_buffer_at(buffer, i + 1))) {
                 ++i;
             }
 
-            uint32_t text_color = editor->theme.text_color;
-            uint32_t bg_color = editor->theme.background_color;
+            //uint32_t text_color = editor->theme.text_color;
+            //uint32_t bg_color = editor->theme.background_color;
 
+            /*
+              TODO(marla): get a string view into the gap buffer unless we're on the gap line, then we can use temp storage.
             if (start <= editor->cursor && i >= editor->cursor) {
                 StringView prefix = {&file->buffer[start], editor->cursor - start};
                 StringView suffix = {&file->buffer[editor->cursor + 1], i - editor->cursor};
@@ -85,17 +87,18 @@ void editor_render_file(Editor *editor, int width, int height, Renderer *rendere
                 StringView text = {&file->buffer[start], i - start + 1};
                 x += render_text(renderer, &editor->font, x, y, text, text_color);
             }
+            */
         } break;
         }
     }
 }
 
 void editor_move_cursor_up(Editor *editor) {
-    File *file = &editor->files.data[0];
+    GapBuffer *buffer = &editor->buffer;
 
     if (editor->vertical_move_offset_cache == -1) {
         int temp_cursor = editor->cursor;
-        while (temp_cursor > 0 && file->buffer[temp_cursor - 1] != '\n') {
+        while (temp_cursor > 0 && gap_buffer_at(buffer, temp_cursor - 1) != '\n') {
             temp_cursor -= 1;
         }
         editor->vertical_move_offset_cache = editor->cursor - temp_cursor;
@@ -104,7 +107,7 @@ void editor_move_cursor_up(Editor *editor) {
     int offset = editor->vertical_move_offset_cache;
     int old_cursor = editor->cursor;
 
-    while (editor->cursor > 0 && file->buffer[editor->cursor] != '\n') {
+    while (editor->cursor > 0 && gap_buffer_at(buffer, editor->cursor) != '\n') {
         editor->cursor -= 1;
     }
 
@@ -115,25 +118,25 @@ void editor_move_cursor_up(Editor *editor) {
     }
 
     editor->cursor -= 1;
-    while (file->buffer[editor->cursor] != '\n') {
+    while (gap_buffer_at(buffer, editor->cursor) != '\n') {
         editor->cursor -= 1;
         if (editor->cursor == -1) break;
     }
     editor->cursor += 1;
 
     for (int i = 0; i < offset; ++i) {
-        char c = file->buffer[editor->cursor];
+        char c = gap_buffer_at(buffer, editor->cursor);
         if (c == '\r' || c == '\n') break;
         editor->cursor += 1;
     }
 }
 
 void editor_move_cursor_down(Editor *editor) {
-    File *file = &editor->files.data[0];
+    GapBuffer *buffer = &editor->buffer;
 
     if (editor->vertical_move_offset_cache == -1) {
         int temp_cursor = editor->cursor;
-        while (temp_cursor > 0 && file->buffer[temp_cursor - 1] != '\n') {
+        while (temp_cursor > 0 && gap_buffer_at(buffer, temp_cursor - 1) != '\n') {
             temp_cursor -= 1;
         }
         editor->vertical_move_offset_cache = editor->cursor - temp_cursor;
@@ -142,13 +145,13 @@ void editor_move_cursor_down(Editor *editor) {
     int offset = editor->vertical_move_offset_cache;
 
     // TODO(marla): handle end of file.
-    while (file->buffer[editor->cursor] != '\n') {
+    while (gap_buffer_at(buffer, editor->cursor) != '\n') {
         editor->cursor += 1;
     }
     editor->cursor += 1;
 
     for (int i = 0; i < offset; ++i) {
-        char c = file->buffer[editor->cursor];
+        char c = gap_buffer_at(buffer, editor->cursor);
         if (c == '\r' || c == '\n') break;
         editor->cursor += 1;
     }
@@ -157,8 +160,8 @@ void editor_move_cursor_down(Editor *editor) {
 void editor_move_cursor_forward(Editor *editor) {
     editor->vertical_move_offset_cache = -1;
 
-    File *file = &editor->files.data[0];
-    if (file->buffer[editor->cursor] == '\r') {
+    GapBuffer *buffer = &editor->buffer;
+    if (gap_buffer_at(buffer, editor->cursor) == '\r') {
         // skip past the \n.
         editor->cursor += 1;
     }
@@ -168,15 +171,13 @@ void editor_move_cursor_forward(Editor *editor) {
 void editor_move_cursor_forward_word(Editor *editor) {
     editor->vertical_move_offset_cache = -1;
 
-    File *file = &editor->files.data[0];
-
+    GapBuffer *buffer = &editor->buffer;
     // TODO(marla): handle end of file.
-    while (!isalnum(file->buffer[editor->cursor])) {
+    while (!isalnum(gap_buffer_at(buffer, editor->cursor))) {
         editor->cursor += 1;
     }
-
     // TODO(marla): handle end of file.
-    while (isalnum(file->buffer[editor->cursor])) {
+    while (isalnum(gap_buffer_at(buffer, editor->cursor))) {
         editor->cursor += 1;
     }
 }
@@ -184,9 +185,9 @@ void editor_move_cursor_forward_word(Editor *editor) {
 void editor_move_cursor_backward(Editor *editor) {
     editor->vertical_move_offset_cache = -1;
 
-    File *file = &editor->files.data[0];
+    GapBuffer *buffer = &editor->buffer;
     editor->cursor = max(0, editor->cursor - 1);
-    if (file->buffer[editor->cursor] == '\r') {
+    if (gap_buffer_at(buffer, editor->cursor) == '\r') {
         // skip past the \r.
         editor->cursor = max(0, editor->cursor - 1);
     }
@@ -195,12 +196,12 @@ void editor_move_cursor_backward(Editor *editor) {
 void editor_move_cursor_backward_word(Editor *editor) {
     editor->vertical_move_offset_cache = -1;
 
-    File *file = &editor->files.data[0];
+    GapBuffer *buffer = &editor->buffer;
     editor->cursor = max(0, editor->cursor - 1);
-    while (!isalnum(file->buffer[editor->cursor]) && editor->cursor > 0) {
+    while (!isalnum(gap_buffer_at(buffer, editor->cursor)) && editor->cursor > 0) {
         editor->cursor -= 1;
     }
-    while (isalnum(file->buffer[editor->cursor - 1]) && editor->cursor > 0) {
+    while (isalnum(gap_buffer_at(buffer, editor->cursor - 1)) && editor->cursor > 0) {
         editor->cursor -= 1;
     }
 }
@@ -208,8 +209,8 @@ void editor_move_cursor_backward_word(Editor *editor) {
 void editor_move_cursor_start_of_line(Editor *editor) {
     editor->vertical_move_offset_cache = -1;
 
-    File *file = &editor->files.data[0];
-    while (editor->cursor > 0 && file->buffer[editor->cursor - 1] != '\n') {
+    GapBuffer *buffer = &editor->buffer;
+    while (editor->cursor > 0 && gap_buffer_at(buffer, editor->cursor - 1) != '\n') {
         editor->cursor -= 1;
     }
 }
@@ -217,16 +218,15 @@ void editor_move_cursor_start_of_line(Editor *editor) {
 void editor_move_cursor_end_of_line(Editor *editor) {
     editor->vertical_move_offset_cache = -1;
 
-    File *file = &editor->files.data[0];
+    GapBuffer *buffer = &editor->buffer;
     // TODO(marla): handle end of file.
-    while (file->buffer[editor->cursor] != '\r' && file->buffer[editor->cursor] != '\n') {
+    while (gap_buffer_at(buffer, editor->cursor) != '\r' && gap_buffer_at(buffer, editor->cursor) != '\n') {
         editor->cursor += 1;
     }
 }
 
 void editor_type_char(Editor *editor, char c) {
-    File *file = &editor->files.data[0];
-    file->buffer[editor->cursor++] = c;
+    gap_buffer_insert_char(&editor->buffer, editor->cursor++, c);
 }
 
 void editor_backspace(Editor *editor) {
