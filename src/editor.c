@@ -66,28 +66,11 @@ void editor_render_file(Editor *editor, int width, int height, Renderer *rendere
             x += editor->font.max_advance * tab_width;
         } break;
         default: {
-            // tokenize.
-            //size_t start = i;
-            while (gap_buffer_at(buffer, i + 1) != '\0' && !isspace(gap_buffer_at(buffer, i + 1))) {
-                ++i;
-            }
-
-            //uint32_t text_color = editor->theme.text_color;
-            //uint32_t bg_color = editor->theme.background_color;
-
-            /*
-              TODO(marla): get a string view into the gap buffer unless we're on the gap line, then we can use temp storage.
-            if (start <= editor->cursor && i >= editor->cursor) {
-                StringView prefix = {&file->buffer[start], editor->cursor - start};
-                StringView suffix = {&file->buffer[editor->cursor + 1], i - editor->cursor};
-                x += render_text(renderer, &editor->font, x, y, prefix, text_color);
-                x += render_glyph(renderer, &editor->font, x, y, file->buffer[editor->cursor], bg_color);
-                x += render_text(renderer, &editor->font, x, y, suffix, text_color);
-            } else {
-                StringView text = {&file->buffer[start], i - start + 1};
-                x += render_text(renderer, &editor->font, x, y, text, text_color);
-            }
-            */
+            // TODO(marla): tokenize for the mode to set the correct color.
+            uint32_t text_color = editor->theme.text_color;
+            uint32_t bg_color = editor->theme.background_color;
+            uint32_t color = (editor->cursor == i ? bg_color : text_color);
+            x += render_glyph(renderer, &editor->font, x, y, c, color);
         } break;
         }
     }
