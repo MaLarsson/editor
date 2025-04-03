@@ -214,6 +214,7 @@ void editor_type_char(Editor *editor, char c) {
 
 void editor_backspace(Editor *editor) {
     UNUSED(editor);
+    gap_buffer_delete(&editor->buffer, editor->cursor--);
 }
 
 void editor_backspace_word(Editor *editor) {
@@ -222,6 +223,16 @@ void editor_backspace_word(Editor *editor) {
 
 void editor_delete(Editor *editor) {
     UNUSED(editor);
+}
+
+void editor_add_newline(Editor *editor) {
+    gap_buffer_insert_string(&editor->buffer, editor->cursor, "\r\n");
+    editor->cursor += 2;
+}
+
+void editor_add_tab(Editor *editor) {
+    gap_buffer_insert_string(&editor->buffer, editor->cursor, "    ");
+    editor->cursor += 4;
 }
 
 void editor_scroll_up(Editor *editor) {

@@ -91,6 +91,7 @@ void gap_buffer_init(GapBuffer *buffer, size_t capacity);
 void gap_buffer_insert(GapBuffer *buffer, size_t index, const char *string, size_t len);
 void gap_buffer_insert_string(GapBuffer *buffer, size_t index, const char *string);
 void gap_buffer_insert_char(GapBuffer *buffer, size_t index, char c);
+void gap_buffer_delete(GapBuffer *buffer, size_t index);
 void gap_buffer_dump(GapBuffer *buffer);
 
 #endif // COMMON_H_

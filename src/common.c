@@ -131,6 +131,13 @@ void gap_buffer_insert_char(GapBuffer *buffer, size_t index, char c) {
     buffer->count += 1;
 }
 
+void gap_buffer_delete(GapBuffer *buffer, size_t index) {
+    if (index != buffer->gap) gap_buffer_move_gap(buffer, index);
+
+    buffer->gap -= 1;
+    buffer->count -= 1;
+}
+
 void gap_buffer_dump(GapBuffer *buffer) {
     printf("count: %llu, capacity: %llu\n", buffer->count, buffer->capacity);
     printf("data: \"");

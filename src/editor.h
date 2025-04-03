@@ -52,6 +52,8 @@ void editor_type_char(Editor *editor, char c);
 void editor_backspace(Editor *editor);
 void editor_backspace_word(Editor *editor);
 void editor_delete(Editor *editor);
+void editor_add_newline(Editor *editor);
+void editor_add_tab(Editor *editor);
 
 void editor_scroll_up(Editor *editor);
 void editor_scroll_down(Editor *editor);

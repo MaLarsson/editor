@@ -235,9 +235,11 @@ void win32_poll_events(Window *window, Editor *editor) {
             else if (message.wParam == VK_SHIFT) shift_down = true;
             else if (message.wParam == VK_RIGHT) editor_move_cursor_forward(editor);
             else if (message.wParam == VK_LEFT) editor_move_cursor_backward(editor);
+            else if (message.wParam == VK_LEFT) editor_move_cursor_backward(editor);
+            else if (message.wParam == VK_BACK) editor_backspace(editor);
+            else if (message.wParam == VK_RETURN) editor_add_newline(editor);
+            else if (message.wParam == VK_TAB) editor_add_tab(editor);
 
-            // VK_BACK
-            // VK_RETURN
             // VK_DELETE
 
             bool modifier_down = alt_down || ctrl_down;
