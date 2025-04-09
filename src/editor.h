@@ -15,6 +15,7 @@ typedef struct {
     uint32_t text_color;
     uint32_t highlight_color;
     uint32_t cursor_color;
+    uint32_t bar_color;
 } Theme;
 
 typedef struct {

@@ -20,6 +20,7 @@ int main(int argc, const char **argv) {
     editor.theme.text_color = WHITE;
     editor.theme.highlight_color = 0x606060FF;
     editor.theme.cursor_color = GREEN;
+    editor.theme.bar_color = 0xD2B48CFF;
 
     // TODO(marla): read straight into a gap buffer.
     File file = read_entire_file("src/main.c");

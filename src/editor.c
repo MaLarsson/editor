@@ -2,23 +2,25 @@
 #include "win32.h"
 
 void editor_render_file(Editor *editor, int width, int height, Renderer *renderer) {
-    UNUSED(width);
-
     float margin = 5;
     float x = margin;
     float y = (float)height + (float)editor->scroll;
     int tab_width = 4;
 
+    float line_gap = editor->font.font_height - (editor->font.ascent - editor->font.descent);
+    float cursor_height = editor->font.font_height - line_gap;
+
     GapBuffer *buffer = &editor->buffer;
+
+    render_quad(renderer, margin, (float)height - cursor_height, (float)editor->font.max_advance * 4, cursor_height,
+                editor->theme.highlight_color);
 
     // render quads.
     // cursor, hightlightning, file info bar, etc.
     for (size_t i = 0; i < buffer->count; ++i) {
         if (i == editor->cursor) {
-            float line_gap = editor->font.font_height - (editor->font.ascent - editor->font.descent);
-            float h = editor->font.font_height - line_gap;
             float w = editor->font.max_advance;
-            render_quad(renderer, x, y - h, w, h, editor->theme.cursor_color);
+            render_quad(renderer, x, y - cursor_height, w, cursor_height, editor->theme.cursor_color);
             break;
         }
 
@@ -74,6 +76,9 @@ void editor_render_file(Editor *editor, int width, int height, Renderer *rendere
         } break;
         }
     }
+
+    render_quad(renderer, 0, editor->font.font_height, (float)width, editor->font.font_height,
+                editor->theme.bar_color);
 }
 
 void editor_move_cursor_up(Editor *editor) {

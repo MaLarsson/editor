@@ -76,9 +76,6 @@ void renderer_update_screen_size(Renderer *renderer, int width, int height);
 void renderer_clear_screen(uint32_t color);
 void renderer_draw(Renderer *renderer);
 
-void renderer_begin_draw_call(Renderer *renderer, GLuint shader);
-void renderer_end_draw_call(Renderer *renderer);
-
 void render_quad(Renderer *renderer, float x, float y, float w, float h, uint32_t color);
 float render_glyph(Renderer *renderer, FontAtlas *font, float x, float y, char c, uint32_t color);
 float render_text(Renderer *renderer, FontAtlas *font, float x, float y, StringView text, uint32_t color);

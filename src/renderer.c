@@ -210,22 +210,11 @@ void renderer_draw(Renderer *renderer) {
     size_t buffer_size = renderer->vertices.count * sizeof(Vertex);
     glBufferData(GL_ARRAY_BUFFER, buffer_size, renderer->vertices.data, GL_DYNAMIC_DRAW);
 
-    glUseProgram(renderer->basic_program);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-
-    glUseProgram(renderer->text_program);
-    glDrawArrays(GL_TRIANGLES, 6, renderer->vertices.count - 6);
-}
-
-void renderer_begin_draw_call(Renderer *renderer, GLuint shader) {
-    UNUSED(renderer);
-    UNUSED(shader);
-    // ...
-}
-
-void renderer_end_draw_call(Renderer *renderer) {
-    UNUSED(renderer);
-    // ...
+    for (uint32_t i = 0; i < renderer->draw_calls.count; ++i) {
+        DrawCall *draw_call = &renderer->draw_calls.data[i];
+        glUseProgram(draw_call->program);
+        glDrawArrays(GL_TRIANGLES, draw_call->index_offset, draw_call->elements);
+    }
 }
 
 void render_quad(Renderer *renderer, float x, float y, float w, float h, uint32_t color) {
@@ -235,6 +224,13 @@ void render_quad(Renderer *renderer, float x, float y, float w, float h, uint32_
     Vertex v3 = {x + w, y,     1, 1, color}; // duplicate v2
     Vertex v4 = {x,     y + h, 0, 0, color}; // duplicate v1
     Vertex v5 = {x + w, y + h, 1, 0, color};
+
+    DrawCall draw_call = {0};
+    draw_call.index_offset = renderer->vertices.count;
+    draw_call.elements = 6;
+    draw_call.program = renderer->basic_program;
+
+    array_add(&renderer->draw_calls, draw_call);
 
     array_add(&renderer->vertices, v0);
     array_add(&renderer->vertices, v1);
@@ -267,6 +263,13 @@ float render_glyph(Renderer *renderer, FontAtlas *font, float x, float y, char c
     Vertex v3 = {x_pos + char_w, y_pos,          x_uv_to,   y_uv_to,   color}; // duplicate v2
     Vertex v4 = {x_pos,          y_pos + char_h, x_uv_from, y_uv_from, color}; // duplicate v1
     Vertex v5 = {x_pos + char_w, y_pos + char_h, x_uv_to,   y_uv_from, color};
+
+    DrawCall draw_call = {0};
+    draw_call.index_offset = renderer->vertices.count;
+    draw_call.elements = 6;
+    draw_call.program = renderer->text_program;
+
+    array_add(&renderer->draw_calls, draw_call);
 
     array_add(&renderer->vertices, v0);
     array_add(&renderer->vertices, v1);
