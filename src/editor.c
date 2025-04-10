@@ -3,6 +3,10 @@
 
 void editor_render_file(Editor *editor, int width, int height, Renderer *renderer) {
     float margin = 5;
+
+    // TODO(marla): 3 char margin for line number?
+    //margin += editor->font.max_advance * 3;
+
     float x = margin;
     float y = (float)height + (float)editor->scroll;
     int tab_width = 4;
@@ -12,8 +16,13 @@ void editor_render_file(Editor *editor, int width, int height, Renderer *rendere
 
     GapBuffer *buffer = &editor->buffer;
 
-    render_quad(renderer, margin, (float)height - cursor_height, (float)editor->font.max_advance * 4, cursor_height,
-                editor->theme.highlight_color);
+    // TODO(marla): highlighting between mark and cursor.
+    //render_quad(renderer, margin, (float)height - cursor_height, (float)editor->font.max_advance * 4, cursor_height, editor->theme.highlight_color);
+
+    size_t cursor_row = 1;
+    size_t cursor_column = 5;
+    size_t row = 1;
+    size_t column = 1;
 
     // render quads.
     // cursor, hightlightning, file info bar, etc.
@@ -21,6 +30,8 @@ void editor_render_file(Editor *editor, int width, int height, Renderer *rendere
         if (i == editor->cursor) {
             float w = editor->font.max_advance;
             render_quad(renderer, x, y - cursor_height, w, cursor_height, editor->theme.cursor_color);
+            cursor_row = row;
+            cursor_column = column;
             break;
         }
 
@@ -29,6 +40,7 @@ void editor_render_file(Editor *editor, int width, int height, Renderer *rendere
         switch (c) {
         case ' ': {
             x += editor->font.max_advance;
+            column += 1;
         } break;
         case '\r': {
             // do nothing.
@@ -36,12 +48,16 @@ void editor_render_file(Editor *editor, int width, int height, Renderer *rendere
         case '\n': {
             x = margin;
             y -= editor->font.font_height;
+            row += 1;
+            column = 1;
         } break;
         case '\t': {
             x += editor->font.max_advance * tab_width;
+            column += 4;
         } break;
         default: {
             x += editor->font.glyphs[glyph_index(c)].advance;
+            column += 1;
         } break;
         }
     }
@@ -77,8 +93,13 @@ void editor_render_file(Editor *editor, int width, int height, Renderer *rendere
         }
     }
 
-    render_quad(renderer, 0, editor->font.font_height, (float)width, editor->font.font_height,
-                editor->theme.bar_color);
+    render_quad(renderer, 0, 0, (float)width, editor->font.font_height, editor->theme.bar_color);
+
+    bool modified = false; // TODO(marla): store modified in the file.
+    char menubar_buffer[1024];
+    int menubar_len = sprintf(menubar_buffer, "main.c %s    %zu:%zu", modified ? "[+]" : "   ", cursor_row, cursor_column);
+    StringView sv = {menubar_buffer, menubar_len};
+    render_text(renderer, &editor->font, 5, editor->font.font_height - line_gap / 2, sv, editor->theme.background_color);
 }
 
 void editor_move_cursor_up(Editor *editor) {
