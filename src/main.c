@@ -3,9 +3,16 @@
 #include "renderer.h"
 #include "win32.h"
 
+#define shift(xs, xs_sz) (assert((xs_sz) > 0), (xs_sz)--, *(xs)++)
+
 int main(int argc, const char **argv) {
-    UNUSED(argc);
-    UNUSED(argv);
+    shift(argv, argc);
+    if (argc == 0) {
+        printf("ERROR: no file selected\n");
+        return 1;
+    }
+
+    const char *path = shift(argv, argc);
 
     Window window = {0};
     win32_init_window(&window, 1200, 1200, "Editor");
@@ -23,10 +30,21 @@ int main(int argc, const char **argv) {
     editor.theme.bar_color = 0xD2B48CFF;
 
     // TODO(marla): read straight into a gap buffer.
-    File file = read_entire_file("src/main.c");
+    File file = read_entire_file(path);
     gap_buffer_init(&editor.buffer, file.size * 2);
     gap_buffer_insert(&editor.buffer, 0, file.buffer, file.size);
     free(file.buffer);
+
+    size_t len = strlen(path);
+    size_t i = len;
+    while (i > 0) {
+        if (path[i-1] == '\\' || path[i-1]== '/') break;
+        --i;
+    }
+    len -= i;
+    editor.filename = malloc(sizeof(char) * len + 1);
+    memcpy(editor.filename, &path[i], len);
+    editor.filename[len] = '\0';
 
     while (!window.should_close) {
         win32_poll_events(&window, &editor);

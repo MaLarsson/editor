@@ -8,7 +8,7 @@ void editor_render_file(Editor *editor, int width, int height, Renderer *rendere
     //margin += editor->font.max_advance * 3;
 
     float x = margin;
-    float y = (float)height + (float)editor->scroll;
+    float y = (float)height + (float)editor->scroll - editor->font.font_height;
     int tab_width = 4;
 
     float line_gap = editor->font.font_height - (editor->font.ascent - editor->font.descent);
@@ -20,7 +20,7 @@ void editor_render_file(Editor *editor, int width, int height, Renderer *rendere
     //render_quad(renderer, margin, (float)height - cursor_height, (float)editor->font.max_advance * 4, cursor_height, editor->theme.highlight_color);
 
     size_t cursor_row = 1;
-    size_t cursor_column = 5;
+    size_t cursor_column = 1;
     size_t row = 1;
     size_t column = 1;
 
@@ -63,7 +63,7 @@ void editor_render_file(Editor *editor, int width, int height, Renderer *rendere
     }
 
     x = margin;
-    y = (float)height + (float)editor->scroll;
+    y = (float)height + (float)editor->scroll - editor->font.font_height;;
 
     // render all the characters.
     for (size_t i = 0; i < buffer->count; ++i) {
@@ -93,13 +93,13 @@ void editor_render_file(Editor *editor, int width, int height, Renderer *rendere
         }
     }
 
-    render_quad(renderer, 0, 0, (float)width, editor->font.font_height, editor->theme.bar_color);
+    render_quad(renderer, 0, (float)height - editor->font.font_height, (float)width, editor->font.font_height, editor->theme.bar_color);
 
     bool modified = false; // TODO(marla): store modified in the file.
     char menubar_buffer[1024];
-    int menubar_len = sprintf(menubar_buffer, "main.c %s    %zu:%zu", modified ? "[+]" : "   ", cursor_row, cursor_column);
+    int menubar_len = sprintf(menubar_buffer, "%s %s    %zu:%zu", editor->filename, modified ? "[+]" : "   ", cursor_row, cursor_column);
     StringView sv = {menubar_buffer, menubar_len};
-    render_text(renderer, &editor->font, 5, editor->font.font_height - line_gap / 2, sv, editor->theme.background_color);
+    render_text(renderer, &editor->font, 5, (float)height - line_gap / 2, sv, editor->theme.background_color);
 }
 
 void editor_move_cursor_up(Editor *editor) {

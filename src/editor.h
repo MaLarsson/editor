@@ -30,6 +30,7 @@ typedef struct {
     FontAtlas font;
 
     // TODO(marla): these should be per file?
+    char *filename;
     GapBuffer buffer;
     int cursor;
     int scroll;
