@@ -36,6 +36,7 @@ typedef struct {
     int scroll;
     int vertical_move_offset_cache;
     int mark;
+    bool mark_active;
     Mode mode;
 } Editor;
 
@@ -57,6 +58,7 @@ void editor_delete(Editor *editor);
 void editor_add_newline(Editor *editor);
 void editor_add_tab(Editor *editor);
 
+void editor_toggle_mark(Editor *editor);
 void editor_scroll_up(Editor *editor);
 void editor_scroll_down(Editor *editor);
 

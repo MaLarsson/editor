@@ -251,7 +251,9 @@ void win32_poll_events(Window *window, Editor *editor) {
                 break;
             }
 
-            if (message.wParam == 'F') {
+            if (message.wParam == VK_SPACE) {
+                if (ctrl_down) editor_toggle_mark(editor);
+            } else if (message.wParam == 'F') {
                 if (alt_down) editor_move_cursor_forward_word(editor);
                 else if (ctrl_down) editor_move_cursor_forward(editor);
             } else if (message.wParam == 'B') {

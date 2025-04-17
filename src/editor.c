@@ -16,23 +16,29 @@ void editor_render_file(Editor *editor, int width, int height, Renderer *rendere
 
     GapBuffer *buffer = &editor->buffer;
 
-    // TODO(marla): highlighting between mark and cursor.
-    //render_quad(renderer, margin, (float)height - cursor_height, (float)editor->font.max_advance * 4, cursor_height, editor->theme.highlight_color);
-
     size_t cursor_row = 1;
     size_t cursor_column = 1;
     size_t row = 1;
     size_t column = 1;
 
+    float cursor_x = 0;
+    float cursor_y = 0;
+    float mark_x = 0;
+    float mark_y = 0;
+
     // render quads.
     // cursor, hightlightning, file info bar, etc.
     for (size_t i = 0; i < buffer->count; ++i) {
         if (i == editor->cursor) {
-            float w = editor->font.max_advance;
-            render_quad(renderer, x, y - cursor_height, w, cursor_height, editor->theme.cursor_color);
             cursor_row = row;
             cursor_column = column;
-            break;
+            cursor_x = x;
+            cursor_y = y;
+        }
+
+        if (editor->mark_active && i == editor->mark && editor->mark != editor->cursor) {
+            mark_x = x;
+            mark_y = y;
         }
 
         char c = gap_buffer_at(buffer, i);
@@ -62,10 +68,20 @@ void editor_render_file(Editor *editor, int width, int height, Renderer *rendere
         }
     }
 
+    float cursor_w = editor->font.max_advance;
+
+    if (editor->mark_active && editor->mark != editor->cursor) {
+        float w = mark_x - cursor_x - cursor_w;
+        render_quad(renderer, cursor_x + cursor_w, cursor_y - cursor_height, w, cursor_height,
+                    editor->theme.highlight_color);
+    }
+
+    render_quad(renderer, cursor_x, cursor_y - cursor_height, cursor_w, cursor_height, editor->theme.cursor_color);
+
+    // render all the characters.
     x = margin;
     y = (float)height + (float)editor->scroll - editor->font.font_height;;
 
-    // render all the characters.
     for (size_t i = 0; i < buffer->count; ++i) {
         char c = gap_buffer_at(buffer, i);
 
@@ -259,6 +275,15 @@ void editor_add_newline(Editor *editor) {
 void editor_add_tab(Editor *editor) {
     gap_buffer_insert_string(&editor->buffer, editor->cursor, "    ");
     editor->cursor += 4;
+}
+
+void editor_toggle_mark(Editor *editor) {
+    if (editor->mark == editor->cursor && editor->mark_active) {
+        editor->mark_active = false;
+        return;
+    }
+    editor->mark_active = true;
+    editor->mark = editor->cursor;
 }
 
 void editor_scroll_up(Editor *editor) {
